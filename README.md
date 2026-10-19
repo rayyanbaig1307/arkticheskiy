@@ -134,7 +134,9 @@ npm run pack
 
 - The page needs WebGL 2. A discrete GPU is not required; on integrated graphics use Low or
   Medium.
-- The crew speak Russian through your browser's speech voices if a Russian one is installed
-  (Windows: Settings → Time & language → Speech → add Russian). Otherwise you hear a murmur and
-  read the subtitles.
+- The crew speak Russian in recorded voices (ElevenLabs, `public/audio/vo/`), with English
+  subtitles. After changing a line in `src/characters/Lines.js`, record it again with
+  `node tools/elevenlabs/generate.mjs --dry` (the cost) and then without `--dry`; until then that
+  line falls back to your browser's Russian speech voice if one is installed (Windows: Settings →
+  Time & language → Speech → add Russian), else a murmur.
 - Walruses are Arctic and penguins Antarctic; here they share the ice anyway.

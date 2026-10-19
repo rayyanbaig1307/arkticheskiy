@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arctic Tug voices</title>
+<style>
+  :root { color-scheme: dark; --bg: #0d1218; --card: #16202a; --line: #263442; --text: #dfe8ee; --dim: #8fa3b3; --accent: #7cc4e8; }
+  body { margin: 0; padding: 24px 16px 48px; background: var(--bg); color: var(--text); font: 15px/1.45 system-ui, sans-serif; }
+  main { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 28px 0 8px; }
+  p.note { color: var(--dim); margin: 0 0 16px; }
+  .who { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin: 10px 0; }
+  .who b { color: var(--accent); }
+  .why { color: var(--dim); font-size: 13px; margin: 2px 0 6px; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 4px 0; border-top: 1px solid var(--line); }
+  .row:first-of-type { border-top: 0; }
+  .row .t { flex: 1 1 320px; min-width: 0; }
+  .row .en { color: var(--dim); font-size: 13px; }
+  .id { font: 12px ui-monospace, monospace; color: var(--dim); }
+  audio { height: 32px; max-width: 100%; }
+  .none { color: #e3a46b; font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Arctic Tug: the voices</h1>
+  <p class="note">Each speaker's ElevenLabs voice (cast in <code>tools/elevenlabs/manifest.json</code>): the voice's own sample from the Voice Library, then every recorded line (<code>public/audio/vo/</code>). Lines without a recording are spoken by the browser in the game. Open through the dev server: <code>/tools/elevenlabs/listen.html</code>.</p>
+  <div id="out">Loading…</div>
+</main>
+<script type="module">
+  const M = await (await fetch('./manifest.json')).json();
+  let index = {};
+  try { const r = await fetch('../../audio/vo/index.json'); if (r.ok && /json/.test(r.headers.get('content-type') || '')) index = await r.json(); } catch {}
+  const { CAST, LINES, MOMENTS, STORY, STORY_CAST } = await import('../../src/characters/Lines.js');
+  const lines = [];
+  for (const [who, list] of Object.entries(LINES)) list.forEach(([ru, en], i) => lines.push({ id: `${who}_${i}`, who, ru, en }));
+  for (const [kind, m] of Object.entries(MOMENTS)) for (const who of m.who) lines.push({ id: `${who}_${kind}`, who, ru: m.line[0], en: m.line[1] });
+  for (const [key, [who, ru, en]] of Object.entries(STORY)) lines.push({ id: `story_${key}`, who, ru, en });
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  let html = '', recorded = 0;
+  for (const [who, v] of Object.entries(M.voices)) {
+    const name = (CAST[who] || STORY_CAST[who] || { name: who }).name;
+    html += `<div class="who"><div><b>${esc(name)}</b> &middot; ${esc(v.name)} <span class="id">${esc(v.model || M.model)}</span></div><div class="why">${esc(v.why || '')}</div>`;
+    if (v.preview) html += `<div class="row"><div class="t"><span class="en">Voice Library sample (free)</span></div><audio controls preload="none" src="${esc(v.preview)}"></audio></div>`;
+    for (const l of lines.filter((x) => x.who === who)) {
+      const e = index[l.id];
+      const ok = e && e.ru === l.ru;
+      if (ok) recorded++;
+      html += `<div class="row"><div class="t">${esc(l.ru)}<div class="en">${esc(l.en)} <span class="id">${l.id}</span></div></div>${ok ? `<audio controls preload="none" src="../../audio/vo/${esc(e.file)}"></audio>` : '<span class="none">not recorded</span>'}</div>`;
+    }
+    html += '</div>';
+  }
+  document.getElementById('out').innerHTML = `<p class="note">${recorded} of ${lines.length} lines recorded.</p>` + html;
+</script>
+</body>
+</html>

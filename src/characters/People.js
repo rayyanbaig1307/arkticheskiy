@@ -119,6 +119,7 @@ export class Person {
     this.hit.position.y = 0.9;
     this.root.add(this.hit);
     this.clip = null; this.talking = false; this.mouth = 0; this.t = Math.random() * 10;
+    this.speech = null;            // the recorded line being said (Crew.utter): its loudness moves the mouth
     this.yaw = 0; this.speed = 0; this.vis = true;
     this.mouthLocal = new THREE.Vector3(...(this.info.mouth || [0, 1.62, -0.1]));
     this.small = [];
@@ -168,7 +169,9 @@ export class Person {
   update(dt) {
     this.t += dt;
     this.mixer.update(dt);
-    const want = this.talking ? Math.max(0, Math.sin(this.t * 13) * 0.6 + Math.sin(this.t * 7.3 + 1) * 0.4) * (Math.sin(this.t * 1.1) > -0.6 ? 1 : 0) : 0;
+    // (a recorded line: the mouth follows its loudness; otherwise a made-up flap while talking)
+    const want = this.speech ? this.speech.level()
+      : this.talking ? Math.max(0, Math.sin(this.t * 13) * 0.6 + Math.sin(this.t * 7.3 + 1) * 0.4) * (Math.sin(this.t * 1.1) > -0.6 ? 1 : 0) : 0;
     this.mouth = damp(this.mouth, want, 18, dt);
     for (const [o, i] of this.morphs) o.morphTargetInfluences[i] = this.mouth * 0.8;
   }

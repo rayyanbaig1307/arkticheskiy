@@ -3,13 +3,15 @@ import { RECIPES, ENGINE_F0, rng, noise, makeIR, wobble } from './Synth.js';
 import { Music } from './Music.js';
 
 // The game's sound, every bit of it made in code (audio/Synth.js has the recipes, audio/Music.js the
-// score). Nothing exists until start() is called from the first click; then there is one
+// score) except the spoken lines, which are recordings (audio/Voices.js loads them, playBuffer()
+// plays them). Nothing exists until start() is called from the first click; then there is one
 // AudioContext, one graph, and the beds that run for the whole voyage.
 //
-//   outdoor bus  wind, sea, the bow wave, the ice, gulls, animals, the horn, the funnel's exhaust
+//   outdoor bus  wind, sea, the bow wave, the ice, gulls, animals, the horn, the funnel's exhaust,
+//                anyone talking out on deck
 //                → the muffle (a lowpass to 600 Hz and -10 dB as you step inside) → master
 //   onboard bus  footsteps, doors, the engine room, the hull, the radios, the kettle, voices
-//                → master
+//                indoors → master
 //   sends        the outdoor reverb (2.5 s: the open ice), the ice field's slow echo (the horn,
 //                cracks), and a short steel-room reverb that the onboard bus feeds while you're in
 //   music        → master, well under the beds
@@ -23,6 +25,7 @@ import { Music } from './Music.js';
 
 const MAX_VOICES = 24;
 const MUSIC_LEVEL = 0.165;                // (about 18 dB under the outdoor beds)
+const VOICE_RMS = 0.11;                   // a recorded line's speech is brought to this level
 const ROOM_WET = { engine: 0.6, engine_stair: 0.5, mess: 0.34, galley: 0.34, hall: 0.4, corridor: 0.4, lobby: 0.4, bridge: 0.28, cabin: 0.24 };
 
 // level and range of each named effect (footsteps play 2D unless given a position)
@@ -118,6 +121,8 @@ export class Audio {
     this.engGrace = 0; this.engFadeUntil = 0; this.engStartVoice = null;
     this.radios = Object.create(null); this.radioList = [];
     this.kettleSt = { want: false, obj: null, built: false, sess: null, placed: false };
+    this.analysed = new WeakMap();         // recording -> its loudness (playBuffer)
+    this.radioVoiceIn = null;
   }
 
   // ------------------------------------------------------------ the API
@@ -295,6 +300,37 @@ export class Audio {
         offset: loop ? 0 : rnd(0, Math.max(0, buf.duration - sec - 0.2)),
       });
     } catch (e) { this._err(e); }
+  }
+
+  // A recording (a voice line, audio/Voices.js) from a point in the world, levelled to the others.
+  // Said inside (o.zone a room) it goes through the onboard bus, darker if you're not in that room;
+  // said outside (o.zone null) through the outdoor bus, so the muffle has it when you're in; no
+  // position: in your ear. o: { gain, ref, roll, zone, radio (a small loudspeaker), prio }.
+  // Returns { duration, done, level() (its loudness now, 0..1, for the lips), move(worldPos),
+  // stop(fade) }, or null (no sound yet).
+  playBuffer(buffer, worldPos, opts) {
+    if (!this.built || !buffer) return null;
+    try {
+      const o = opts || {}, ctx = this.ctx, pos = posOf(worldPos), a = this._analyse(buffer);
+      const outside = pos && o.zone === null, away = pos && typeof o.zone === 'string' && o.zone !== this.cur.zone;
+      const v = this._play(buffer, {
+        pos, ref: num(o.ref, 1.6), roll: num(o.roll, 1.2), gain: num(o.gain, 1) * a.norm,
+        dest: o.radio ? this._radioVoice() : outside ? this.outBus : this.inBus,
+        rev: outside ? 0.18 : 0, lp: away ? 1100 : 0, prio: o.prio !== false,
+      });
+      if (!v) return null;
+      const t0 = ctx.currentTime, dur = buffer.duration, env = a.env, rate = a.rate;
+      return {
+        duration: dur,
+        get done() { return v.dead || ctx.currentTime > t0 + dur + 0.05; },
+        level() {
+          const t = ctx.currentTime - t0;
+          return v.dead || t < 0 || t >= dur ? 0 : env[Math.min(env.length - 1, (t * rate) | 0)];
+        },
+        move: (p) => { const q = posOf(p); if (q && v.p && !v.dead) this._move(v.p, q.x, q.y, q.z, ctx.currentTime); },
+        stop: (fade = 0.08) => { if (!v.dead) this._kill(v, ctx.currentTime, fade); },
+      };
+    } catch (e) { this._err(e); return null; }
   }
 
   // ------------------------------------------------------------ the graph
@@ -848,8 +884,9 @@ export class Audio {
       const f = this._filter('lowpass', o.lp || clamp(20000 / (1 + d / 110), 1400, 20000), 0.5);
       tail.connect(f); tail = f; nodes.push(f);
     }
+    let panner = null;
     if (pos) {
-      const p = this._panner(ref, o.roll ?? 1);
+      const p = panner = this._panner(ref, o.roll ?? 1);
       this._place(p, pos.x, pos.y, pos.z);
       tail.connect(p); p.connect(dest); nodes.push(p);
     } else if (o.pan) {
@@ -874,7 +911,7 @@ export class Audio {
       g.gain.value = gain;
       src.start(when, Math.min(o.offset || 0, Math.max(0, buf.duration - 0.05)));
     }
-    const v = { src, g, nodes, end: when + len + 0.1, prio: !!o.prio, dead: false };
+    const v = { src, g, nodes, p: panner, end: when + len + 0.1, prio: !!o.prio, dead: false };
     src.onended = () => this._free(v);
     this.playing.push(v);
     return v;
@@ -908,6 +945,48 @@ export class Audio {
       v.g.gain.setTargetAtTime(0, now, time / 3);
       v.src.stop(now + time * 2 + 0.02);
     } catch (e) { /* already stopped */ }
+  }
+
+  // A recording's loudness, read once: 60 frames a second in dB; its level (the mean power of the
+  // frames within 30 dB of its loudest, so the pauses don't count) gives the gain that brings it to
+  // VOICE_RMS; each frame's place between 26 dB under the loudest and the loudest is the mouth.
+  _analyse(buf) {
+    let a = this.analysed.get(buf);
+    if (a) return a;
+    const sr = buf.sampleRate, hop = Math.max(1, Math.round(sr / 60)), n = Math.max(1, Math.ceil(buf.length / hop));
+    const chans = [];
+    for (let c = 0; c < buf.numberOfChannels; c++) chans.push(buf.getChannelData(c));
+    const db = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      const s0 = i * hop, s1 = Math.min(buf.length, s0 + hop);
+      let sum = 0;
+      for (const d of chans) for (let s = s0; s < s1; s++) sum += d[s] * d[s];
+      db[i] = 10 * Math.log10(sum / Math.max(1, (s1 - s0) * chans.length) + 1e-12);
+    }
+    const sorted = Float32Array.from(db).sort();
+    const peak = sorted[Math.floor((n - 1) * 0.95)];
+    let pw = 0, k = 0;
+    for (let i = 0; i < n; i++) if (db[i] > peak - 30) { pw += Math.pow(10, db[i] / 10); k++; }
+    const rms = Math.sqrt(pw / Math.max(1, k));
+    const env = new Float32Array(n);
+    for (let i = 0; i < n; i++) env[i] = Math.pow(clamp((db[i] - peak + 26) / 26, 0, 1), 1.3);
+    a = { env, rate: sr / hop, norm: clamp(VOICE_RMS / Math.max(rms, 1e-4), 0.25, 6) };
+    this.analysed.set(buf, a);
+    return a;
+  }
+
+  // the radio's loudspeaker for a recorded voice: telephone band, a little overdrive, into the
+  // onboard bus (made when first wanted)
+  _radioVoice() {
+    if (this.radioVoiceIn) return this.radioVoiceIn;
+    const hp = this._filter('highpass', 380, 0.8), lp = this._filter('lowpass', 2900, 0.9), mid = this._filter('peaking', 1700, 1.2, 5);
+    const sh = this.ctx.createWaveShaper(), curve = new Float32Array(1024);
+    for (let i = 0; i < 1024; i++) { const x = (i / 1023) * 2 - 1; curve[i] = Math.tanh(x * 2.6) / Math.tanh(2.6); }
+    sh.curve = curve;
+    const pre = this._gain(1.6), out = this._gain(0.7);
+    hp.connect(lp); lp.connect(mid); mid.connect(pre); pre.connect(sh); sh.connect(out); out.connect(this.inBus);
+    this.radioVoiceIn = hp;
+    return hp;
   }
 
   // render the rest of the bank in idle moments, one variant at a time

@@ -1,0 +1,415 @@
+{
+ "captain_0": {
+  "file": "captain_0.mp3",
+  "who": "captain",
+  "ru": "Добро пожаловать на мостик. Руками ничего не трогай... шучу. Хочешь порулить, бери штурвал.",
+  "voice": "pM78bgjPVk0JXtaEnFoj",
+  "model": "eleven_v4"
+ },
+ "captain_1": {
+  "file": "captain_1.mp3",
+  "who": "captain",
+  "ru": "Лёд сегодня тяжёлый. Держим средний ход, не торопимся.",
+  "voice": "pM78bgjPVk0JXtaEnFoj",
+  "model": "eleven_v4"
+ },
+ "captain_2": {
+  "file": "captain_2.mp3",
+  "who": "captain",
+  "ru": "Тридцать лет хожу по Северу, а сияние до сих пор не надоело.",
+  "voice": "pM78bgjPVk0JXtaEnFoj",
+  "model": "eleven_v4"
+ },
+ "captain_3": {
+  "file": "captain_3.mp3",
+  "who": "captain",
+  "ru": "Прожектор на крыше. Пульт справа от штурвала.",
+  "voice": "pM78bgjPVk0JXtaEnFoj",
+  "model": "eleven_v4"
+ },
+ "captain_4": {
+  "file": "captain_4.mp3",
+  "who": "captain",
+  "ru": "Айсберги обходим, не таранить. Мы ледокол, а не дурак.",
+  "voice": "pM78bgjPVk0JXtaEnFoj",
+  "model": "eleven_v4"
+ },
+ "bosun_0": {
+  "file": "bosun_0.mp3",
+  "who": "bosun",
+  "ru": "Не стой на линии троса! Лопнет — пополам разрежет.",
+  "voice": "2Zst4rvX5S2nMbiauLDN",
+  "model": "eleven_v4"
+ },
+ "bosun_1": {
+  "file": "bosun_1.mp3",
+  "who": "bosun",
+  "ru": "Держись за поручни, качает.",
+  "voice": "2Zst4rvX5S2nMbiauLDN",
+  "model": "eleven_v4"
+ },
+ "bosun_2": {
+  "file": "bosun_2.mp3",
+  "who": "bosun",
+  "ru": "Этот трос толще моей руки. И то, бывает, рвётся.",
+  "voice": "2Zst4rvX5S2nMbiauLDN",
+  "model": "eleven_v4"
+ },
+ "bosun_3": {
+  "file": "bosun_3.mp3",
+  "who": "bosun",
+  "ru": "Видишь моржей на льдине? Здоровые, как бочки.",
+  "voice": "2Zst4rvX5S2nMbiauLDN",
+  "model": "eleven_v4"
+ },
+ "deckhand_0": {
+  "file": "deckhand_0.mp3",
+  "who": "deckhand",
+  "ru": "Холодно сегодня, а? Минус тридцать, не меньше.",
+  "voice": "Uv3rf12Omd9Asyv54Bqw",
+  "model": "eleven_v4"
+ },
+ "deckhand_1": {
+  "file": "deckhand_1.mp3",
+  "who": "deckhand",
+  "ru": "Первый рейс за полярный круг. Красиво, но пальцы не чувствую.",
+  "voice": "Uv3rf12Omd9Asyv54Bqw",
+  "model": "eleven_v4"
+ },
+ "deckhand_2": {
+  "file": "deckhand_2.mp3",
+  "who": "deckhand",
+  "ru": "Говорят, пингвинов тут не бывает. А вон же они, сидят.",
+  "voice": "Uv3rf12Omd9Asyv54Bqw",
+  "model": "eleven_v4"
+ },
+ "deckhand_3": {
+  "file": "deckhand_3.mp3",
+  "who": "deckhand",
+  "ru": "Кок обещал блины к утру.",
+  "voice": "Uv3rf12Omd9Asyv54Bqw",
+  "model": "eleven_v4"
+ },
+ "engineer_0": {
+  "file": "engineer_0.mp3",
+  "who": "engineer",
+  "ru": "Двигатель работает как часы. Слышишь?",
+  "voice": "9AjtU6o19uipv7QL8dLL",
+  "model": "eleven_v4"
+ },
+ "engineer_1": {
+  "file": "engineer_1.mp3",
+  "who": "engineer",
+  "ru": "Свет в машинном — вот этими выключателями. Только не балуйся.",
+  "voice": "9AjtU6o19uipv7QL8dLL",
+  "model": "eleven_v4"
+ },
+ "engineer_2": {
+  "file": "engineer_2.mp3",
+  "who": "engineer",
+  "ru": "Масло в норме, температура в норме. Значит, и я в норме.",
+  "voice": "9AjtU6o19uipv7QL8dLL",
+  "model": "eleven_v4"
+ },
+ "engineer_3": {
+  "file": "engineer_3.mp3",
+  "who": "engineer",
+  "ru": "Хочешь заглушить машину — красная кнопка. Потом сам заводить будешь.",
+  "voice": "9AjtU6o19uipv7QL8dLL",
+  "model": "eleven_v4"
+ },
+ "cook_0": {
+  "file": "cook_0.mp3",
+  "who": "cook",
+  "ru": "Чай будет скоро. Поставь чайник, раз уж пришёл.",
+  "voice": "LTkx8oHrUXaND7aaxdTA",
+  "model": "eleven_v4"
+ },
+ "cook_1": {
+  "file": "cook_1.mp3",
+  "who": "cook",
+  "ru": "На обед борщ. На ужин тоже борщ.",
+  "voice": "LTkx8oHrUXaND7aaxdTA",
+  "model": "eleven_v4"
+ },
+ "cook_2": {
+  "file": "cook_2.mp3",
+  "who": "cook",
+  "ru": "Радио оставь, пусть играет. Без музыки тоскливо.",
+  "voice": "LTkx8oHrUXaND7aaxdTA",
+  "model": "eleven_v4"
+ },
+ "cook_3": {
+  "file": "cook_3.mp3",
+  "who": "cook",
+  "ru": "Стол я только что вытер. Не ставь на него ничего.",
+  "voice": "LTkx8oHrUXaND7aaxdTA",
+  "model": "eleven_v4"
+ },
+ "soldier1_0": {
+  "file": "soldier1_0.mp3",
+  "who": "soldier1",
+  "ru": "Всё спокойно. Продолжайте.",
+  "voice": "6A9D8WSMm4rFsg2DWFeE",
+  "model": "eleven_v4"
+ },
+ "soldier1_1": {
+  "file": "soldier1_1.mp3",
+  "who": "soldier1",
+  "ru": "Пост сдал, пост принял. Ничего интересного, кроме льда.",
+  "voice": "6A9D8WSMm4rFsg2DWFeE",
+  "model": "eleven_v4"
+ },
+ "soldier1_2": {
+  "file": "soldier1_2.mp3",
+  "who": "soldier1",
+  "ru": "Вам сюда можно, вам на мостик тоже можно. А вот на нос ночью — осторожно.",
+  "voice": "6A9D8WSMm4rFsg2DWFeE",
+  "model": "eleven_v4"
+ },
+ "soldier2_0": {
+  "file": "soldier2_0.mp3",
+  "who": "soldier2",
+  "ru": "Здравия желаю.",
+  "voice": "RvcToHi9ENVDatbeYNJe",
+  "model": "eleven_v4"
+ },
+ "soldier2_1": {
+  "file": "soldier2_1.mp3",
+  "who": "soldier2",
+  "ru": "Обход каждые полчаса. Ноги уже не чувствую.",
+  "voice": "RvcToHi9ENVDatbeYNJe",
+  "model": "eleven_v4"
+ },
+ "soldier2_2": {
+  "file": "soldier2_2.mp3",
+  "who": "soldier2",
+  "ru": "Сержант не любит, когда я разговариваю на посту.",
+  "voice": "RvcToHi9ENVDatbeYNJe",
+  "model": "eleven_v4"
+ },
+ "soldier3_0": {
+  "file": "soldier3_0.mp3",
+  "who": "soldier3",
+  "ru": "Смотрю на лёд. Лёд смотрит на меня.",
+  "voice": "MWyJiWDobXN8FX3CJTdE",
+  "model": "eleven_v4"
+ },
+ "soldier3_1": {
+  "file": "soldier3_1.mp3",
+  "who": "soldier3",
+  "ru": "В бинокль видно моржей. Один на меня смотрит, честно.",
+  "voice": "MWyJiWDobXN8FX3CJTdE",
+  "model": "eleven_v4"
+ },
+ "soldier3_2": {
+  "file": "soldier3_2.mp3",
+  "who": "soldier3",
+  "ru": "Северное сияние сегодня красивое.",
+  "voice": "MWyJiWDobXN8FX3CJTdE",
+  "model": "eleven_v4"
+ },
+ "soldier4_0": {
+  "file": "soldier4_0.mp3",
+  "who": "soldier4",
+  "ru": "Не подходите близко к корме, там трос.",
+  "voice": "drOVtcvHhJKNEXv5h1l5",
+  "model": "eleven_v4"
+ },
+ "soldier4_1": {
+  "file": "soldier4_1.mp3",
+  "who": "soldier4",
+  "ru": "Дома сейчас тоже снег. Но не такой.",
+  "voice": "drOVtcvHhJKNEXv5h1l5",
+  "model": "eleven_v4"
+ },
+ "soldier4_2": {
+  "file": "soldier4_2.mp3",
+  "who": "soldier4",
+  "ru": "Слышите, как лёд скрипит? Привыкнуть невозможно.",
+  "voice": "drOVtcvHhJKNEXv5h1l5",
+  "model": "eleven_v4"
+ },
+ "engineer_engineOff": {
+  "file": "engineer_engineOff.mp3",
+  "who": "engineer",
+  "ru": "Машина встала! Кто нажал кнопку?",
+  "voice": "9AjtU6o19uipv7QL8dLL",
+  "model": "eleven_v4"
+ },
+ "captain_engineOff": {
+  "file": "captain_engineOff.mp3",
+  "who": "captain",
+  "ru": "Машина встала! Кто нажал кнопку?",
+  "voice": "pM78bgjPVk0JXtaEnFoj",
+  "model": "eleven_v4"
+ },
+ "bosun_engineOff": {
+  "file": "bosun_engineOff.mp3",
+  "who": "bosun",
+  "ru": "Машина встала! Кто нажал кнопку?",
+  "voice": "2Zst4rvX5S2nMbiauLDN",
+  "model": "eleven_v4"
+ },
+ "captain_iceHit": {
+  "file": "captain_iceHit.mp3",
+  "who": "captain",
+  "ru": "Аккуратнее! Так и корпус помять недолго.",
+  "voice": "pM78bgjPVk0JXtaEnFoj",
+  "model": "eleven_v4"
+ },
+ "bosun_iceHit": {
+  "file": "bosun_iceHit.mp3",
+  "who": "bosun",
+  "ru": "Аккуратнее! Так и корпус помять недолго.",
+  "voice": "2Zst4rvX5S2nMbiauLDN",
+  "model": "eleven_v4"
+ },
+ "deckhand_iceHit": {
+  "file": "deckhand_iceHit.mp3",
+  "who": "deckhand",
+  "ru": "Аккуратнее! Так и корпус помять недолго.",
+  "voice": "Uv3rf12Omd9Asyv54Bqw",
+  "model": "eleven_v4"
+ },
+ "soldier2_iceHit": {
+  "file": "soldier2_iceHit.mp3",
+  "who": "soldier2",
+  "ru": "Аккуратнее! Так и корпус помять недолго.",
+  "voice": "RvcToHi9ENVDatbeYNJe",
+  "model": "eleven_v4"
+ },
+ "deckhand_horn": {
+  "file": "deckhand_horn.mp3",
+  "who": "deckhand",
+  "ru": "Вот это гудок! Все моржи проснулись.",
+  "voice": "Uv3rf12Omd9Asyv54Bqw",
+  "model": "eleven_v4"
+ },
+ "soldier3_horn": {
+  "file": "soldier3_horn.mp3",
+  "who": "soldier3",
+  "ru": "Вот это гудок! Все моржи проснулись.",
+  "voice": "MWyJiWDobXN8FX3CJTdE",
+  "model": "eleven_v4"
+ },
+ "cook_horn": {
+  "file": "cook_horn.mp3",
+  "who": "cook",
+  "ru": "Вот это гудок! Все моржи проснулись.",
+  "voice": "LTkx8oHrUXaND7aaxdTA",
+  "model": "eleven_v4"
+ },
+ "soldier3_aurora": {
+  "file": "soldier3_aurora.mp3",
+  "who": "soldier3",
+  "ru": "Посмотри наверх. Сияние играет.",
+  "voice": "MWyJiWDobXN8FX3CJTdE",
+  "model": "eleven_v4"
+ },
+ "deckhand_aurora": {
+  "file": "deckhand_aurora.mp3",
+  "who": "deckhand",
+  "ru": "Посмотри наверх. Сияние играет.",
+  "voice": "Uv3rf12Omd9Asyv54Bqw",
+  "model": "eleven_v4"
+ },
+ "captain_aurora": {
+  "file": "captain_aurora.mp3",
+  "who": "captain",
+  "ru": "Посмотри наверх. Сияние играет.",
+  "voice": "pM78bgjPVk0JXtaEnFoj",
+  "model": "eleven_v4"
+ },
+ "cook_kettle": {
+  "file": "cook_kettle.mp3",
+  "who": "cook",
+  "ru": "Чайник закипел! Наливай.",
+  "voice": "LTkx8oHrUXaND7aaxdTA",
+  "model": "eleven_v4"
+ },
+ "story_intro": {
+  "file": "story_intro.mp3",
+  "who": "captain",
+  "ru": "Штурман, станция «Северный» ждёт нас: продукты, топливо, почта на всю зиму. Бери штурвал, поведёшь.",
+  "voice": "pM78bgjPVk0JXtaEnFoj",
+  "model": "eleven_v4"
+ },
+ "story_helm": {
+  "file": "story_helm.mp3",
+  "who": "captain",
+  "ru": "Курс на «Северный»: норд-норд-ост, два с половиной километра. Крупные льдины обходи, мелочь дави.",
+  "voice": "pM78bgjPVk0JXtaEnFoj",
+  "model": "eleven_v4"
+ },
+ "story_auto": {
+  "file": "story_auto.mp3",
+  "who": "captain",
+  "ru": "Ладно, старпом подержит курс. Перед подходом вернись на мостик.",
+  "voice": "pM78bgjPVk0JXtaEnFoj",
+  "model": "eleven_v4"
+ },
+ "story_radio": {
+  "file": "story_radio.mp3",
+  "who": "radio",
+  "ru": "«Полярник», «Полярник», я «Северный». Видим ваши огни. Причал свободен, лёд у кромки крепкий.",
+  "voice": "onwK4e9ZLuTAKqWW03F9",
+  "model": "eleven_v4"
+ },
+ "story_approach": {
+  "file": "story_approach.mp3",
+  "who": "captain",
+  "ru": "Сбавь ход до малого. Подходим правым бортом, носом на запад. Видишь огни на причале?",
+  "voice": "pM78bgjPVk0JXtaEnFoj",
+  "model": "eleven_v4"
+ },
+ "story_handover": {
+  "file": "story_handover.mp3",
+  "who": "captain",
+  "ru": "Дальше сам, штурман. Подводи к причалу, малым ходом.",
+  "voice": "pM78bgjPVk0JXtaEnFoj",
+  "model": "eleven_v4"
+ },
+ "story_fast": {
+  "file": "story_fast.mp3",
+  "who": "captain",
+  "ru": "Тише, тише! Не тарань причал, сбавь ход.",
+  "voice": "pM78bgjPVk0JXtaEnFoj",
+  "model": "eleven_v4"
+ },
+ "story_docking": {
+  "file": "story_docking.mp3",
+  "who": "captain",
+  "ru": "Стоп машина! Боцман, подать концы!",
+  "voice": "pM78bgjPVk0JXtaEnFoj",
+  "model": "eleven_v4"
+ },
+ "story_moored": {
+  "file": "story_moored.mp3",
+  "who": "captain",
+  "ru": "Пришвартовались. Молодец. Сходи на лёд, начальник станции ждёт.",
+  "voice": "pM78bgjPVk0JXtaEnFoj",
+  "model": "eleven_v4"
+ },
+ "story_chief": {
+  "file": "story_chief.mp3",
+  "who": "chief",
+  "ru": "Добро пожаловать на «Северный»! Две недели вас ждали. Мука кончилась, а табак ещё раньше. Спасибо, моряки!",
+  "voice": "ogi2DyUAKJb7CEdqqvlU",
+  "model": "eleven_v4"
+ },
+ "story_chief2": {
+  "file": "story_chief2.mp3",
+  "who": "chief",
+  "ru": "Заходите греться, чай на плите. Только сапоги отряхните.",
+  "voice": "ogi2DyUAKJb7CEdqqvlU",
+  "model": "eleven_v4"
+ },
+ "story_castoff": {
+  "file": "story_castoff.mp3",
+  "who": "captain",
+  "ru": "Отдать концы! Ну что, обратно во льды.",
+  "voice": "pM78bgjPVk0JXtaEnFoj",
+  "model": "eleven_v4"
+ }
+}

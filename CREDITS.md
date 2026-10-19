@@ -1,7 +1,7 @@
 # Credits
 
-Everything in this game was made for it, except the libraries and the MakeHuman assets listed
-here. No third-party images, recordings or models are used.
+Everything in this game was made for it, except the libraries, the MakeHuman assets and the
+ElevenLabs voices listed here. No third-party images, sound recordings or models are used.
 
 ## Code libraries
 
@@ -59,15 +59,38 @@ code and shaders, at runtime).
 
 ## Voices
 
-The crew's lines are spoken by the browser's own speech synthesis when a Russian voice is
-installed on the computer (Windows, macOS and Chrome provide them); otherwise a synthesised
-murmur plays under the subtitles. The script (Russian and English) is in
-`src/characters/Lines.js`.
+Every spoken line (the crew, the soldiers, the captain's story lines, the station's radio and its
+chief: 59 recordings in `public/audio/vo/`) was generated for this game with
+[ElevenLabs](https://elevenlabs.io) text to speech (model Eleven v4, on a paid plan with a
+commercial licence) from the script in `src/characters/Lines.js`, by
+`tools/elevenlabs/generate.mjs`. The voices (cast in `tools/elevenlabs/manifest.json`) are from
+the ElevenLabs Voice Library, except Daniel, one of ElevenLabs' own default voices:
+
+| Character | ElevenLabs voice |
+|---|---|
+| Captain Volkov | Nester Surovy (Gravely yet Refined) |
+| Bosun Petrov | Arty Grumson (Raspy and Calm) |
+| Lyosha, the deckhand | Max (Alive and Emotional) |
+| Chief Engineer Kuznetsov | Alex (Calm Russian Analyst) |
+| Semyonych, the cook | Alexrady |
+| Sergeant Orlov | Egor Gadzhiyev (Clear and Commanding) |
+| Private Belov | Mikhail |
+| Private Akhmetov | Oleg (Calm, Natural and Clear) |
+| Private Smirnov | Vladislav (Engaging and Clear) |
+| Station chief Gromov | Stanislav (Deep, Empathetic and Warm) |
+| Station Severny's radio operator | Daniel (Steady Broadcaster) |
+
+The recordings play as positional sound from each speaker's head (the radio's through a
+loudspeaker filter), and the 'talk' shape key follows their loudness. A line without a recording
+(one changed in the script and not generated again) is spoken by the browser's own speech
+synthesis when a Russian voice is installed, otherwise by a synthesised murmur under the
+subtitles. `tools/elevenlabs/listen.html` (opened through the dev server) plays every recording.
 
 ## Sound
 
-Every sound and all of the music is synthesised in code at runtime by `src/audio` with the Web
-Audio API. There are no audio files and no third-party recordings or samples. `Synth.js` renders
+Apart from the voices above, every sound and all of the music is synthesised in code at runtime
+by `src/audio` with the Web Audio API. There are no other audio files and no third-party
+recordings or samples. `Synth.js` renders
 the one-shots and loops sample by sample (cached, a few variants of each), `Audio.js` builds the
 live graph (beds, HRTF panners, the indoor muffle, reverbs), and `Music.js` plays the score.
 `tools/audio-test.html` auditions all of it.

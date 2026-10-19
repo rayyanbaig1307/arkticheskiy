@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { ORDERS } from '../boat/Boat.js';
 import { STATION_POS } from '../world/Station.js';
 import { Person } from '../characters/People.js';
+import { STORY as SAY, STORY_CAST as VOICES } from '../characters/Lines.js';
 import { loadGLB } from '../core/Assets.js';
 import { angleDiff, clamp } from '../core/util.js';
 
@@ -22,27 +23,9 @@ import { angleDiff, clamp } from '../core/util.js';
 // The free voyage has no objectives and no lines, but the berth works the same.
 
 const ALONG_RANGE = 45, ALONG_SPEED = 2.6, ALONG_ANGLE = 0.95;
+// the lines that may come up next in each state (their recordings are fetched on the way in)
+const NEXT = { start: ['intro'], take: ['helm'], steer: ['auto', 'radio', 'approach', 'handover'], approach: ['fast', 'docking'], docking: ['moored'], moored: ['chief'], free: ['chief2', 'castoff'] };
 const _v = new THREE.Vector3(), _w = new THREE.Vector3(), _m = new THREE.Matrix4();
-
-const SAY = {
-  intro: ['captain', 'Штурман, станция «Северный» ждёт нас: продукты, топливо, почта на всю зиму. Бери штурвал, поведёшь.', 'Navigator, Station Severny is waiting for us: food, fuel, mail for the whole winter. Take the wheel, you\'re steering.'],
-  helm: ['captain', 'Курс на «Северный»: норд-норд-ост, два с половиной километра. Крупные льдины обходи, мелочь дави.', 'Course for Severny: north-north-east, two and a half kilometres. Go round the big floes, push the small stuff aside.'],
-  auto: ['captain', 'Ладно, старпом подержит курс. Перед подходом вернись на мостик.', 'All right, the mate will hold the course. Come back to the bridge before the approach.'],
-  radio: ['radio', '«Полярник», «Полярник», я «Северный». Видим ваши огни. Причал свободен, лёд у кромки крепкий.', 'Polyarnik, Polyarnik, this is Severny. We see your lights. The berth is clear, the ice at the edge is solid.'],
-  approach: ['captain', 'Сбавь ход до малого. Подходим правым бортом, носом на запад. Видишь огни на причале?', 'Ease her down to slow ahead. We go alongside starboard side to, bow to the west. See the lights on the berth?'],
-  handover: ['captain', 'Дальше сам, штурман. Подводи к причалу, малым ходом.', 'From here she\'s yours, navigator. Bring her to the berth, dead slow.'],
-  fast: ['captain', 'Тише, тише! Не тарань причал, сбавь ход.', 'Easy, easy! Don\'t ram the berth, take the way off her.'],
-  docking: ['captain', 'Стоп машина! Боцман, подать концы!', 'Stop engine! Bosun, lines ashore!'],
-  moored: ['captain', 'Пришвартовались. Молодец. Сходи на лёд, начальник станции ждёт.', 'We\'re moored. Well done. Go ashore, the station chief is waiting for you.'],
-  chief: ['chief', 'Добро пожаловать на «Северный»! Две недели вас ждали. Мука кончилась, а табак ещё раньше. Спасибо, моряки!', 'Welcome to Severny! We\'ve waited two weeks for you. The flour ran out, and the tobacco before it. Thank you, sailors!'],
-  chief2: ['chief', 'Заходите греться, чай на плите. Только сапоги отряхните.', 'Come in and warm up, the tea\'s on the stove. Just knock the snow off your boots.'],
-  castoff: ['captain', 'Отдать концы! Ну что, обратно во льды.', 'Let go the lines! Well then, back into the ice.'],
-};
-const VOICES = {
-  captain: { name: 'Captain Volkov', pitch: 0.85, rate: 0.95 },
-  radio: { name: 'Severny (radio)', pitch: 1.05, rate: 1.05 },
-  chief: { name: 'Station chief Gromov', pitch: 0.78, rate: 0.92 },
-};
 
 export class Story {
   constructor(ctx) {
@@ -55,6 +38,7 @@ export class Story {
     this.extra = null;              // the ice's collision while moored
     this.chief = null;
     this.done = false;
+    this.endT = 0;                  // the end card, this long after the chief has spoken
     this.el = {
       obj: document.getElementById('objective'), title: document.getElementById('objtitle'), text: document.getElementById('objtext'),
       dist: document.getElementById('objdist'), marker: document.getElementById('marker'), mlabel: document.getElementById('mlabel'),
@@ -66,18 +50,24 @@ export class Story {
     });
     this.wheelSpot = this.model.spots.wheel?.pos?.clone() || new THREE.Vector3(0, 7.6, -6.5);
     this.objective(null);
+    if (this.story) this.prefetch(NEXT.start);
   }
 
   get story() { return this.mode === 'story'; }
 
-  // the line, its subtitle and its voice (the browser's Russian voice if it has one)
+  // the line, its subtitle and its voice (its recording; else the browser's Russian voice if it
+  // has one): the chief's from the chief, his mouth moving with it, for as long as it lasts
   say(key) {
     if (this.said.has(key) && !/fast|chief2/.test(key)) return;
     this.said.add(key);
     const [who, ru, en] = SAY[key];
     const v = VOICES[who];
-    this.crew.speak(v, ru, en, who === 'radio');
+    const c = who === 'chief' ? this.chief : null;
+    this.crew.speak(v, ru, en, { who, p: c?.p, onStart: c ? (secs) => { c.talkT = secs; if (key === 'chief' && this.endT > 0) this.endT = secs + 1; } : null });
   }
+
+  // the recordings of the lines that may come next, fetched ahead
+  prefetch(keys) { for (const k of keys || []) { const l = SAY[k]; if (l && !this.said.has(k)) this.crew.voices.prefetch(l[0], l[1]); } }
 
   objective(title, text) {
     const el = this.el;
@@ -87,7 +77,7 @@ export class Story {
     el.title.textContent = title; el.text.textContent = text || '';
   }
 
-  go(state) { this.state = state; this.stateT = 0; }
+  go(state) { this.state = state; this.stateT = 0; if (this.story) this.prefetch(NEXT[state]); }
 
   // the berth's marks (world): where she lies, and the approach 380 m out in front of it
   get berth() { return this.station.berth; }
@@ -242,7 +232,7 @@ export class Story {
     p.play('idle', 0);
     this.scene.add(p.root);
     this.chief = { p, home: p.yaw, talked: 0 };
-    this.interactions.add(p.hit, { hint: () => 'Talk to the station chief', use: () => this.talkChief(), range: 3.6 });
+    this.interactions.add(p.hit, { hint: () => { this.prefetch([this.chief?.talked ? 'chief2' : 'chief']); return 'Talk to the station chief'; }, use: () => this.talkChief(), range: 3.6 });
   }
 
   talkChief() {
@@ -250,12 +240,10 @@ export class Story {
     if (!c) return;
     c.p.talking = true; c.talkT = 6; c.p.play('talk', 0.35);
     if (!c.talked) {
+      // (the end card a moment after he's finished)
+      if (this.state !== 'free') { this.go('free'); this.done = true; this.endT = 6.5; }
       this.say('chief');
       c.talked = 1;
-      if (this.state !== 'free') {
-        this.go('free'); this.done = true;
-        setTimeout(() => this.endCard(), 6500);
-      }
     } else { this.say('chief2'); }
   }
 
@@ -266,8 +254,9 @@ export class Story {
       const cam = this.player.camera.position;
       const want = Math.atan2(-(cam.x - c.p.root.position.x), -(cam.z - c.p.root.position.z));
       c.p.yaw += angleDiff(c.p.yaw, want) * Math.min(1, dt * 4); c.p.root.rotation.y = c.p.yaw;
-      if ((c.talkT -= dt) <= 0) { c.p.talking = false; c.p.play('idle', 0.6); }
+      if ((c.talkT -= dt) <= 0) { c.p.talking = false; c.p.speech = null; c.p.play('idle', 0.6); }
     }
+    if (this.endT > 0 && (this.endT -= dt) <= 0) this.endCard();
   }
 
   endCard() {
