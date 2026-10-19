@@ -1,0 +1,23 @@
+{
+  "name": "arctic-tug",
+  "version": "0.1.0",
+  "description": "ПОЛЯРНИК: a first-person walk on a Russian icebreaker tug in the Arctic night",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "pack": "node tools/pack.mjs"
+  },
+  "dependencies": {
+    "n8ao": "^2.0.1",
+    "postprocessing": "^6.39.5",
+    "three": "^0.186.1",
+    "three-mesh-bvh": "^0.9.16"
+  },
+  "devDependencies": {
+    "gltfpack": "^1.3.0",
+    "vite": "^8.3.4"
+  }
+}

@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sound test: Polyarnik</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; padding: 16px 20px 48px; background: #0d1218; color: #d8e2ea; font: 14px/1.45 system-ui, sans-serif; }
+    h1 { font-size: 20px; margin: 0 0 4px; letter-spacing: 0.04em; font-weight: 600; }
+    h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; color: #8fb3cc; margin: 22px 0 8px; font-weight: 600; }
+    p.note { color: #8a9aa8; margin: 0 0 14px; max-width: 76ch; }
+    .row { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
+    button { background: #1b2733; color: #e6eef4; border: 1px solid #2d3d4c; border-radius: 6px; padding: 6px 11px; font: inherit; cursor: pointer; }
+    button:hover { background: #24364a; }
+    button.on { background: #2e5a7a; border-color: #4f86ad; }
+    button.big { font-size: 16px; padding: 10px 22px; background: #2e5a7a; border-color: #4f86ad; }
+    label { display: inline-flex; gap: 6px; align-items: center; margin-right: 12px; color: #b8c6d2; }
+    label output { min-width: 3.2em; color: #e6eef4; font-variant-numeric: tabular-nums; }
+    input[type=range] { width: 130px; }
+    select { background: #1b2733; color: #e6eef4; border: 1px solid #2d3d4c; border-radius: 6px; padding: 4px 6px; font: inherit; }
+    #status { color: #8fb3cc; font-family: ui-monospace, monospace; font-size: 12px; margin-left: 12px; }
+  </style>
+</head>
+<body>
+  <h1>ПОЛЯРНИК · sound test</h1>
+  <p class="note">Every sound here is synthesised in code at runtime by <code>src/audio</code>; there are no recordings.
+    Press Start, then click through. Headphones help: you stand at the origin facing forward (−Z), the engine is
+    below and behind you, the bow 20 m ahead, and the one-shots play where the Position list says.</p>
+  <div class="row"><button id="start" class="big">Start audio</button><span id="status">not started</span></div>
+  <div id="ui"></div>
+  <script type="module" src="./audio-test.js"></script>
+</body>
+</html>

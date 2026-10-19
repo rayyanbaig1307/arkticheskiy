@@ -1,0 +1,7 @@
+node_modules/
+dist/
+*.blend1
+tools/blender/raw/
+tools/blender/previews/
+.DS_Store
+__pycache__/
