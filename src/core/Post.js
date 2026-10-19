@@ -9,7 +9,7 @@ import { N8AOPostPass } from 'n8ao';
 //
 //   scene -> ambient occlusion (N8AO; Medium and High) -> exposure (and depth of field on High)
 //   -> bloom (the aurora, the lamps, the moon, the searchlight) -> ACES filmic -> the grade (a cold
-//   blue grade, a soft S-curve, vignette, film grain) -> SMAA (Medium)
+//   blue grade, a soft S-curve, vignette, a sub-visible dither) -> SMAA (Medium)
 
 class SanitizeExposure extends Effect {
   constructor() {
@@ -26,12 +26,13 @@ class SanitizeExposure extends Effect {
 
 // After tone mapping: a cool, filmic Arctic grade. Shadows lean blue-teal, highlights stay
 // near-white with a hint of warmth, saturation is pulled down a touch except in the aurora's green.
-// Then a soft vignette and animated grain (stronger in the shadows, the way film behaves).
+// Then a soft vignette. No film grain: on this sky it read as TV static. Only a one-step dither
+// (interleaved gradient noise, below what the eye sees) keeps the dark gradients from banding.
 class GradeEffect extends Effect {
   constructor() {
     super('GradeEffect', /* glsl */ `
       uniform float uTime, uGrain, uVignette, uCool, uContrast, uSat;
-      float gh(vec2 p){ p = fract(p * vec2(443.897, 441.423)); p += dot(p, p.yx + 19.19); return fract((p.x + p.y) * p.x); }
+      float ign(vec2 p){ return fract(52.9829189 * fract(dot(p, vec2(.06711056, .00583715)))); }
       void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor){
         vec3 c = clamp(inputColor.rgb, 0., 1.);
         float l = dot(c, vec3(.2126, .7152, .0722));
@@ -47,12 +48,11 @@ class GradeEffect extends Effect {
         // vignette
         vec2 q = uv - .5; q.x *= 1.15;
         c *= 1. - uVignette * smoothstep(.25, .85, dot(q, q) * 2.2);
-        // grain
-        float n = gh(uv * 1024. + fract(uTime * 7.31) * 113.) - .5;
-        c += n * uGrain * (1.15 - l);
+        // dither (one 8-bit step)
+        c += (ign(gl_FragCoord.xy) - .5) * uGrain;
         outputColor = vec4(c, inputColor.a);
       }`, { blendFunction: BlendFunction.NORMAL, uniforms: new Map([
-      ['uTime', new THREE.Uniform(0)], ['uGrain', new THREE.Uniform(0.045)], ['uVignette', new THREE.Uniform(0.38)],
+      ['uTime', new THREE.Uniform(0)], ['uGrain', new THREE.Uniform(1 / 255)], ['uVignette', new THREE.Uniform(0.38)],
       ['uCool', new THREE.Uniform(1)], ['uContrast', new THREE.Uniform(0.22)], ['uSat', new THREE.Uniform(0.92)],
     ]) });
   }

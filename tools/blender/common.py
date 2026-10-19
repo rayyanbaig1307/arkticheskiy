@@ -111,17 +111,21 @@ def mat_textured(name, base=None, normal=None, rough_img=None, rgb=(1, 1, 1), ro
     return m
 
 # ---------------------------------------------------------------- geometry
-def box_uv(me, k=1 / 3):
-    """UVs by box projection (each face onto the plane its normal faces most), 1 unit = 1/k m"""
+def box_uv(me, k=None):
+    """UVs by box projection (each face onto the plane its normal faces most), 1 unit = 1/k m;
+    by default k follows each face's material: its 'tile' property (texlib) is the metres one
+    repeat of its textures covers (3 m when it has none)"""
     uv = me.uv_layers.new(name='UVMap') if not me.uv_layers else me.uv_layers[0]
+    tiles = [1.0 / float(m.get('tile', 3.0)) if m is not None else 1 / 3 for m in me.materials]
     for p in me.polygons:
+        kk = k if k is not None else (tiles[p.material_index] if p.material_index < len(tiles) else 1 / 3)
         n = p.normal; ax, ay, az = abs(n.x), abs(n.y), abs(n.z)
         for li in p.loop_indices:
             co = me.vertices[me.loops[li].vertex_index].co
             if az >= ax and az >= ay: u, v = co.x, co.y
             elif ax >= ay: u, v = co.y, co.z
             else: u, v = co.x, co.z
-            uv.data[li].uv = (u * k, v * k)
+            uv.data[li].uv = (u * kk, v * kk)
 
 def obj_from_bm(bm, name, material=None, coll=None, smooth=False):
     me = bpy.data.meshes.new(name)

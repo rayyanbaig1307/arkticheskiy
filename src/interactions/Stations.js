@@ -16,6 +16,7 @@ import { NO_REFLECT } from '../world/Reflection.js';
 //   door         open and shut (its collision box goes with it)
 //   switch       the engine room's light switches: engine room, deck floods, rooms
 //   engine       start and stop the main engine
+//   winch        the towing winch's lever: heave in the towline, stop, pay it out (boat/Towline.js)
 //
 // The moving parts (the wheel turning with the rudder, the throttle lever, needles, the radar
 // scanner) are animated here every frame.
@@ -164,7 +165,7 @@ export class Stations {
   }
 
   make_radio(it, I) {
-    const r = { node: it.node, on: it.id === 'mess', id: it.id };
+    const r = { node: it.node, on: false, id: it.id };     // (off until you switch one on)
     this.radios[it.id] = r;
     I.add(it.node, {
       hint: () => (r.on ? 'Switch the radio off' : 'Switch the radio on'),
@@ -259,6 +260,24 @@ export class Stations {
     }
   }
 
+  make_winch(it, I) {
+    this.winch = { node: it.node, base: it.node.rotation.x, a: 0 };
+    const say = { stop: 'Stop the winch', in: 'Heave in the towline', out: 'Pay out the towline' };
+    I.add(it.node, {
+      hint: () => { const t = this.ctx.towline; return t?.ok ? `${say[t.nextCommand()]} (${Math.round(t.out)} m out)` : 'Winch'; },
+      use: () => {
+        const t = this.ctx.towline;
+        if (!t?.ok) return;
+        const c = t.nextCommand();
+        t.command(c);
+        this.sfx('clunk', it.node);
+        this.ctx.ui.toast(c === 'stop' ? `Winch stopped. ${Math.round(t.out)} m of line out.` : c === 'in' ? 'Heaving in the towline...' : 'Paying out the towline...');
+        this.emit('winch', c);
+      },
+      range: 2.3,
+    });
+  }
+
   // ------------------------------------------------------------ every frame
   update(dt) {
     const { input, boat, ui } = this.ctx;
@@ -300,6 +319,12 @@ export class Stations {
       n.node.rotation.z = n.base + 2.2 - n.v * 4.4;
     }
     if (this.scanner) this.scanner.rotation.y -= dt * 2.6;
+    // the winch lever leans the way the drum turns
+    if (this.winch) {
+      const m = this.ctx.towline?.state;
+      this.winch.a = damp(this.winch.a, m === 'in' ? -0.45 : m === 'out' ? 0.45 : 0, 8, dt);
+      this.winch.node.rotation.x = this.winch.base + this.winch.a;
+    }
     // doors swing
     for (const d of this.doors) {
       d.a = damp(d.a, d.want * 1.75, 5, dt);

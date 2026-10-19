@@ -21,7 +21,12 @@ THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 //   SL_yaw, SL_pitch, SL_lamp      the searchlight's pivots
 //   RADAR_scanner    the radar's rotating antenna
 //   NEEDLE_<id>      gauge needles (turn about their local z)
+//   WINCH_drum, WINCH_spool, ROLLER_stern   the towing gear's moving parts (boat/Towline.js)
+//   ROPE_drum, ROPE_lead, ROPE_bitt, ROPE_roller   the towline's path over them
+//   FLAG_stern       the ensign (waved by the wind)
 //
+// Materials named "In_" are the rooms' insides. Most parts carry vertex colours (the small parts'
+// colours and the tinted paints: one material per texture set, tools/blender/tug_mats.py).
 // Materials get shadows and the boat's indoor patch: inside a room (a ZONE box) the sky's light
 // (the IBL) fades, so the rooms are lit by their lamps and not by the open sky.
 
@@ -79,7 +84,7 @@ export class BoatModel {
       if (!o.isMesh || !o.visible) return;
       if (hiddenUnder(o, hide)) return;
       const n = (o.material?.name || '').toLowerCase();
-      o.castShadow = !/glass|lamp/.test(n); o.receiveShadow = true;
+      o.castShadow = !/glass|lamp/.test(n) && !o.userData.noCast; o.receiveShadow = true;
       const mats = Array.isArray(o.material) ? o.material : [o.material];
       for (const m of mats) {
         if (seen.has(m)) continue; seen.add(m);
@@ -88,17 +93,24 @@ export class BoatModel {
     });
     // the rooms' insides and the small moving parts stay out of the sea's reflection and the
     // moon's shadow passes (nobody sees them there): far fewer draw calls per frame
-    const INSIDE = /interior|wood|dial|chart|oilcloth|cork|curtain|screen|grating|lamp_warm|brass|chrome/i;
+    const INSIDE = /^in_|interior|glass_inside|lamp_warm|lamp_night|lamp_led|lamp_engine|screen/i;
     const tuck = (o) => { if (o.isMesh) { o.layers.set(NO_REFLECT); o.castShadow = false; } };
     for (const m of this.merged) if (INSIDE.test(m.material.name)) tuck(m);
     for (const it of this.interact) it.node.traverse(tuck);
     for (const [n, o] of Object.entries(this.nodes)) if (n.startsWith('NEEDLE_')) o.traverse(tuck);
   }
 
-  // join every static mesh (not a moving part, not a helper) into one mesh per material, in boat space
+  // join every static mesh (not a moving part, not a helper) into one mesh per material, in boat space;
+  // the engine room's parts apart from the rest (nothing of it shows from anywhere else, so it is
+  // drawn only while you are down there or looking down the hall's stair: roomMeshes.engine)
   mergeStatic(hide) {
     const groups = new Map();
-    const moving = (o) => { for (let p = o; p && p !== this.scene; p = p.parent) if (/^(INT_|NEEDLE_|SL_|RADAR_)/.test(p.name)) return true; return false; };
+    const ENGINE = /^(ENGINE_ROOM|MACHINERY|MACHINERY_SMALLS|PIPEWORK)$/;
+    // (the fine detail outside casts no shadow: the lettering, the chain, the masthead's bits...)
+    const NOCAST = /^(TRIM|OUTFIT_SMALLS|GEAR|MAST|FITTINGS|LADDERS|HORN|CURTAINS|GLASS|GLASS_FRONT)$/;
+    const top = (o) => { let p = o; while (p.parent && p.parent !== this.scene) p = p.parent; return p.name || ''; };
+    this.roomMeshes = { engine: [] };
+    const moving = (o) => { for (let p = o; p && p !== this.scene; p = p.parent) if (/^(INT_|NEEDLE_|SL_|RADAR_|WINCH_|ROLLER_|FLAG_)/.test(p.name)) return true; return false; };
     const remove = [];
     this.scene.updateMatrixWorld(true);
     const inv = new THREE.Matrix4().copy(this.scene.matrixWorld).invert();
@@ -107,7 +119,7 @@ export class BoatModel {
       const g = o.geometry.clone();
       g.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, o.matrixWorld));
       for (const k of Object.keys(g.attributes)) if (!['position', 'normal', 'uv', 'color'].includes(k)) g.deleteAttribute(k);
-      for (const k of ['position', 'normal', 'uv']) {
+      for (const k of ['position', 'normal', 'uv', 'color']) {
         const a = g.attributes[k];
         if (a && (a.normalized || !(a.array instanceof Float32Array))) {
           const f = new Float32Array(a.count * a.itemSize);
@@ -115,17 +127,26 @@ export class BoatModel {
           g.setAttribute(k, new THREE.BufferAttribute(f, a.itemSize));
         }
       }
-      const key = o.material.uuid;
-      if (!groups.has(key)) groups.set(key, { material: o.material, geos: [] });
+      const name = top(o);
+      const room = ENGINE.test(name) ? 'engine' : '';
+      const small = NOCAST.test(name);
+      const key = o.material.uuid + '|' + room + (small ? '|small' : '');
+      if (!groups.has(key)) groups.set(key, { material: o.material, geos: [], room, small });
       groups.get(key).geos.push(g.index ? g.toNonIndexed() : g);
       remove.push(o);
     });
     for (const o of remove) o.parent.remove(o);
     const out = [];
-    for (const { material, geos } of groups.values()) {
+    for (const { material, geos, room, small } of groups.values()) {
       // (every part needs the same attributes to merge: fill in what's missing)
-      const want = ['position', 'normal', 'uv'].filter((k) => geos.some((g) => g.attributes[k]));
-      for (const g of geos) for (const k of want) if (!g.attributes[k]) g.setAttribute(k, new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * (k === 'uv' ? 2 : 3)), k === 'uv' ? 2 : 3));
+      const want = ['position', 'normal', 'uv', 'color'].filter((k) => geos.some((g) => g.attributes[k]));
+      const size = (k) => (k === 'uv' ? 2 : k === 'color' ? (geos.find((g) => g.attributes.color)?.attributes.color.itemSize || 4) : 3);
+      for (const g of geos) for (const k of want) {
+        if (g.attributes[k]) continue;
+        const arr = new Float32Array(g.attributes.position.count * size(k));
+        if (k === 'color') arr.fill(1);              // (no colours: white, the material's own)
+        g.setAttribute(k, new THREE.BufferAttribute(arr, size(k)));
+      }
       for (const g of geos) for (const k of Object.keys(g.attributes)) if (!want.includes(k)) g.deleteAttribute(k);
       const merged = mergeGeometries(geos, false);
       if (!merged) continue;
@@ -135,9 +156,11 @@ export class BoatModel {
       merged.computeBoundingSphere();
       merged.computeBoundsTree?.();
       const m = new THREE.Mesh(merged, material);
-      m.name = 'BOAT_' + (material.name || 'mat');
+      m.name = 'BOAT_' + (material.name || 'mat') + (room ? '_' + room : '');
       this.scene.add(m);
       out.push(m);
+      if (room) this.roomMeshes[room].push(m);
+      m.userData.noCast = !!small;
     }
     return out;
   }
@@ -160,6 +183,8 @@ export class BoatModel {
     if (/deck/.test(n) && m.normalScale) m.normalScale.setScalar(0.6);
     if (/deck_paint/.test(n)) m.color.multiplyScalar(1.7);           // (worn deck paint: lighter than the tin says)
     if (/hull/.test(n) && m.normalScale) m.normalScale.setScalar(0.7);
+    // (the rooms' own materials reflect the rooms: boat/Probes.js; the sky is dimmed indoors for the rest)
+    if (/^in_/.test(n)) return;
     const u = this.uniforms;
     chainCompile(m, (shader) => {
       Object.assign(shader.uniforms, u);

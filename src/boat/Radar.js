@@ -59,6 +59,22 @@ export class Radar {
     c.strokeStyle = 'rgba(60, 220, 120, 0.35)'; c.lineWidth = 1;
     for (let i = 1; i <= 4; i++) { c.beginPath(); c.arc(cx, cy, (R * i) / 4, 0, Math.PI * 2); c.stroke(); }
     c.strokeStyle = 'rgba(150, 255, 190, 0.7)'; c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx, cy - R); c.stroke();
+    // the land: the shelf's ice (Station.js) painted in, its edge bright
+    const land = this.land?.();
+    if (land) {
+      c.save(); c.beginPath(); c.arc(cx, cy, R, 0, Math.PI * 2); c.clip();
+      c.fillStyle = 'rgba(70, 230, 120, 0.28)'; c.strokeStyle = 'rgba(170, 255, 190, 0.9)'; c.lineWidth = 1.5;
+      c.beginPath();
+      land.forEach(([wx, wz], i) => {
+        const dx = wx - b.x, dz = wz - b.z;
+        const brg = Math.atan2(dx, -dz) + b.heading;
+        const d = Math.hypot(dx, dz) / range * R;
+        const x = cx + Math.sin(brg) * d, y = cy - Math.cos(brg) * d;
+        if (i) c.lineTo(x, y); else c.moveTo(x, y);
+      });
+      c.closePath(); c.fill(); c.stroke();
+      c.restore();
+    }
     // echoes
     for (const [p, v] of this.echo) {
       const dx = p.x - b.x, dz = p.z - b.z;

@@ -28,6 +28,11 @@ import { Weather } from './world/Weather.js';
 import { Foam } from './world/Foam.js';
 import { Radar } from './boat/Radar.js';
 import { Audio } from './audio/Audio.js';
+import { Towline } from './boat/Towline.js';
+import { Flag } from './boat/Flag.js';
+import { Probes } from './boat/Probes.js';
+import { Station, STATION_POS } from './world/Station.js';
+import { Story } from './story/Story.js';
 
 // ПОЛЯРНИК: boot, the loop, and the wiring between systems. window.__game is the debug and test
 // hook (the preview harness drives the game through it).
@@ -87,6 +92,11 @@ async function boot() {
   const iceGLB = await tryGLB('models/icebergs.glb');
   const shapes = iceGLB ? iceShapes(iceGLB) : standInShapes();
   const ice = new IceField({ scene, waves, material: iceMat, shapes, quality });
+  // Station Severny on its fast ice, the voyage's end (the ice field leaves its water open)
+  ui.loading('Station Severny', 0.64);
+  const station = new Station({ scene, lighting, iceMaterial: iceMat, quality });
+  await station.load();
+  ice.exclude = (x, z, r) => station.ready && station.blocks(x, z, r);
 
   // you
   const player = new Player({ camera, input, boat, model, settings });
@@ -117,23 +127,44 @@ async function boot() {
   ocean.uniforms.uFoamSize.value = foam.size;
   ocean.uniforms.uFoamOn.value = 1;
   const radar = new Radar({ model, ice, boat, stations });
+  radar.land = () => station.outline();
+  // the towline off the winch, the ensign
+  const towline = new Towline({ scene, boat, model, waves });
+  ctx.towline = towline;
+  towline.onLimit = (end) => ui.toast(end === 'in' ? 'Towline home: the eye is at the roller.' : 'All the line is out.');
+  const flag = new Flag(model.nodes.FLAG_stern);
+  const winchPos = new THREE.Vector3(), WINCH = new THREE.Vector3(0, 3.65, 9.9);
+  let switchRecapture = 0;
   ctx.onEvent = (kind, data) => {
+    if (kind === 'switch') switchRecapture = 0.4;
     if (kind === 'horn') { crew.moment('horn'); animals.horn(data); }
     if (kind === 'kettle') crew.moment('kettle');
   };
   // sounds from the world
   ice.onHit = (p, strength, point, big) => audio.iceHit(point, strength, big);
+  const boatWorld = new THREE.Vector3();
   player.onStep = (kind) => audio.sfx('step_' + kind, null, { gain: player.input.key('ShiftLeft') ? 1 : 0.75 });
   const enginePos = new THREE.Vector3(), bowPos = new THREE.Vector3();
   const ENGINE = new THREE.Vector3(0, 0.4, 3), BOW = new THREE.Vector3(0, 0.3, -19);
 
-  // the autopilot: wander through the field, steering round anything big ahead
+  // the autopilot: for the station on the story's voyage (else a wander through the field),
+  // steering round anything big ahead and keeping off the shelf's edge
   let wander = 0, wanderT = 0;
   boat.pilot = (b) => {
     wanderT -= 1 / 60;
     if (wanderT <= 0) { wanderT = 25 + Math.random() * 30; wander = (Math.random() - 0.5) * 0.9; }
     let want = b.heading + wander * 0.02;
+    const tgt = story?.pilotTarget();
+    if (tgt) want = Math.atan2(-(tgt.x - b.x), -(tgt.z - b.z));
     const f = b.forward;
+    if (station.ready) {
+      const ahead = station.clearance(b.x + f.x * 220, b.z + f.z * 220);
+      if (ahead < 160) {
+        // (turn along the edge: whichever way is nearer to parallel)
+        const along = Math.atan2(-1, 0), w1 = angleDiff(b.heading, along), w2 = angleDiff(b.heading, along + Math.PI);
+        want = b.heading + (Math.abs(w1) < Math.abs(w2) ? w1 : w2) * (1 - ahead / 160) * 1.5 + (tgt ? angleDiff(b.heading, want) * (ahead / 160) : 0);
+      }
+    }
     let avoid = 0;
     for (const p of ice.near(b.x, b.z, 420)) {
       if (p.cls !== 'berg' && p.cls !== 'bit') continue;
@@ -148,6 +179,7 @@ async function boot() {
     return b.heading + Math.max(-0.5, Math.min(0.5, angleDiff(b.heading, want)));
   };
 
+  let story = null;
   // post
   const post = new Post(renderer, scene, camera, quality);
   const perf = new Perf(renderer);
@@ -166,8 +198,6 @@ async function boot() {
     try {
       await audio.start();
       audio.setVolume(settings.volume); audio.setMusic(settings.music);
-      // (the mess radio plays from the start: its music drifts out of the mess door)
-      const mr = stations.radios.mess; if (mr?.on) audio.radio('mess', true, mr.node);
     } catch (e) { console.warn('[Arctic Tug] no sound', e); }
   };
   ui.onPlay = play;
@@ -183,9 +213,17 @@ async function boot() {
   boat.update(0.016); player.update(0.016); ice.update(0.016, boat);
   lighting.update(camera, sky.params);
   await renderer.compileAsync(scene, camera);
+  // the rooms photographed for their own reflections (again when a switch changes their lights)
+  ui.loading('Lighting the rooms', 0.92);
+  const probes = new Probes({ renderer, scene, boat, model, lights, size: quality.envSize });
+  boat.update(0.016); model.update(boat.root);
+  probes.capture(player.pos, player.zone);
+  const recapture = () => { probes.capture(player.pos, player.zone); };
 
   // the loop
   const clock = new THREE.Clock();
+  let freecam = null; const _fc = new THREE.Vector3(), _fl = new THREE.Vector3();
+  let erShown = true;
   let t = 0, frames = 0, fpsT = 0, fpsMs = 0;
   const frame = () => {
     const raw = clock.getDelta();
@@ -199,22 +237,37 @@ async function boot() {
     boat.update(dt);
     if (playing) player.update(dt);
     else { input.look(); player.place(dt); }
+    if (freecam) {        // (test harness: a camera anywhere in boat space)
+      camera.position.copy(boat.toWorld(freecam.pos, _fc)); camera.lookAt(boat.toWorld(freecam.look, _fl)); camera.updateMatrixWorld();
+    }
     interactions.enabled = playing && !stations.at;
     interactions.update();
     ice.update(dt, boat);
+    station.collide(boat, (point, strength, big) => { audio.iceHit(point, strength, big); if (big) crew.moment('iceHit'); });
+    station.update(dt, boatWorld.set(boat.x, 0, boat.z), sky.params.moon, t);
+    if (playing) story.update(dt);
     crew.update(dt, player);
     animals.update(dt, boat, camera);
     weather.update(dt, { camera, params: sky.params, crew, animals, player, indoor: !!player.zone });
     radar.update(dt);
+    towline.update(dt);
+    flag.update(dt, 0.55 + 0.25 * sky.params.clouds, boat.speed);
     audio.update(dt, {
       camera, zone: player.zone, indoor: atmos.uIndoor.value,
       boat: { speed: boat.speed, rpm: boat.rpm, engineOn: boat.engineOn, load: boat.load, x: boat.x, z: boat.z, heading: boat.heading },
       enginePos: boat.toWorld(ENGINE, enginePos), bowPos: boat.toWorld(BOW, bowPos),
       night: sky.params.moon, wind: 0.55 + 0.25 * sky.params.clouds,
     });
+    audio.winch?.(Math.min(1, Math.abs(towline.speed || 0) / 0.9), boat.toWorld(WINCH, winchPos));
     model.update(boat.root);
     lights.scale = sky.params.lamps;
     lights.update(dt, player.pos, player.zone);
+    if (switchRecapture > 0 && (switchRecapture -= dt) <= 0) recapture();
+    // the engine room is drawn only from inside it (or from the hall, down its stair)
+    const erOn = player.zone === 'engine' || player.zone === 'engine_stair' || player.zone === 'hall' || !!freecam;
+    if (erOn !== erShown) { erShown = erOn; for (const m of model.roomMeshes.engine) m.visible = erOn; }
+    station.root.visible = Math.hypot(STATION_POS.x - boat.x, STATION_POS.z - boat.z) < 1900;
+    probes.update(player.zone);
     atmos.uIndoor.value += ((player.zone && player.zone !== 'engine_stair' ? 1 : 0) - atmos.uIndoor.value) * Math.min(1, dt * 3);
     sky.update(dt, camera);
     sky.updateEnv(scene, dt);
@@ -244,9 +297,14 @@ async function boot() {
   const loop = () => { frame(); if (raf) requestAnimationFrame(loop); };
   requestAnimationFrame(loop);
 
+  // the story (or the free voyage): its objectives, the berth, going ashore
+  const towMat = towline.material;
+  story = new Story({ ui, boat, stations, station, crew, audio, player, model, scene, interactions, towline, lighting, peopleData, towMat, settings });
+
   ui.ready();
   window.__game = {
-    THREE, perf, audio, crew, animals, weather, foam, radar, scene, camera, renderer, boat, model, player, ice, sky, ocean, waves, stations, lights, post, ui, input, settings, quality, reflection, lighting,
+    station, get story() { return story; }, STATION_POS,
+    THREE, perf, audio, towline, flag, crew, get probes() { return probes; }, animals, weather, foam, radar, scene, camera, renderer, boat, model, player, ice, sky, ocean, waves, stations, lights, post, ui, input, settings, quality, reflection, lighting,
     // (the hidden preview pane never fires rAF: drive the loop with a timer instead)
     kick(ms = 33) { raf = false; clearInterval(this._iv); this._iv = setInterval(frame, ms); },
     step(n = 1) { for (let i = 0; i < n; i++) frame(); },
@@ -262,6 +320,8 @@ async function boot() {
       return url.length;
     },
     unsnap() { document.getElementById('__snap')?.remove(); },
+    // a camera at a boat-space point looking at another (null: back to your eyes)
+    freecam(pos, look) { freecam = pos ? { pos: new THREE.Vector3(...pos), look: new THREE.Vector3(...look) } : null; },
   };
   void tryGLB; void saveSettings;
 }

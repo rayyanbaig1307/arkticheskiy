@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Person, NAMES, WALK_SPEED, PATROL_SPEED } from './People.js';
 import { CAST, LINES, MOMENTS } from './Lines.js';
 import { angleDiff, clamp } from '../core/util.js';
+import { Nav } from './Nav.js';
 
 // What everyone aboard does. Each person has a routine built from the boat's SPOT_ and PATH_
 // nodes (tools/blender/make_tug.py):
@@ -16,6 +17,10 @@ import { angleDiff, clamp } from '../core/util.js';
 //   soldier3  the lookout on the port bridge wing with binoculars
 //   soldier4  standing guard on the aft deck
 //
+// Nobody walks through anything: every walk is routed round the furniture, the machinery and the
+// deck gear (Nav.js: a grid over the collision mesh), worked out once per leg when the crew comes
+// aboard.
+//
 // Look at someone and press E: they stop, turn to you and say something (Lines.js): in Russian,
 // spoken by the browser's Russian voice when there is one (else a murmur from audio.voice), with
 // English subtitles. Moments (the engine stopped, ice hit, the horn, the aurora, the kettle)
@@ -23,7 +28,7 @@ import { angleDiff, clamp } from '../core/util.js';
 
 const ROUTINES = {
   captain: { spots: ['captain'], clips: [['idle', 14], ['talk', 6], ['idle', 10]] },
-  bosun: { spots: ['bosun'], clips: [['rope', 16], ['idle', 7]] },
+  bosun: { spots: ['bosun', 'bosun2'], clips: [['gauges', 14], ['idle', 7]] },
   deckhand: { path: 'deck', clip: 'walk', speed: WALK_SPEED * 0.9, pause: ['idle', 0.35] },
   engineer: { spots: ['engineer', 'engineer2'], clips: [['gauges', 12], ['idle', 6]] },
   cook: { spots: ['cook2', 'cook'], clips: [['wipe', 12], ['idle', 7]] },
@@ -42,6 +47,7 @@ export class Crew {
     this.moments = new Set();
     this.russian = null;
     this.findVoice();
+    this.nav = new Nav(model.collision);
     for (const name of NAMES) {
       const g = data.models[name];
       if (!g) continue;
@@ -56,12 +62,27 @@ export class Crew {
       } else {
         const path = model.paths[r.path];
         if (!path?.length) continue;
-        p.place(path[0], 0); p.state = 'walk'; p.target = path[1 % path.length]; p.pathI = 1; p.play(r.clip, 0);
+        p.place(path[0], 0); p.state = 'walk'; p.pathI = 1; this.go(p, path[1 % path.length]); p.play(r.clip, 0);
       }
       boat.root.add(p.root);
       interactions.add(p.hit, { hint: () => `Talk to ${p.cast.name}`, use: () => this.talk(p), range: 3.4 });
       this.people.push(p);
     }
+    // every leg of every routine, routed now (so nobody stops to think on the way)
+    const t0 = performance.now();
+    for (const p of this.people) {
+      const r = p.routine;
+      const pts = r.spots ? r.spots.map((s) => model.spots[s]?.pos).filter(Boolean) : (model.paths[r.path] || []);
+      for (let i = 0; i < pts.length && pts.length > 1; i++) this.nav.route(pts[i], pts[(i + 1) % pts.length]);
+    }
+    this.navMs = performance.now() - t0;
+  }
+
+  // walk to a point, by the route round everything in the way
+  go(p, target) {
+    p.target = target;
+    p.route = this.nav.route(p.root.position, target);
+    p.ri = 0;
   }
 
   findVoice() {
@@ -104,6 +125,22 @@ export class Crew {
     } else this.audio?.voice?.(pos, secs);
   }
 
+  // a line from someone who isn't standing here (the story's captain over your shoulder, the
+  // radio, the station chief): the subtitle and the voice (a radio voice is a radio burst)
+  speak(voice, ru, en, radio = false) {
+    const secs = clamp(en.length * 0.065 + 1.2, 2.5, 9);
+    this.ui.subtitle(voice.name, ru, en, secs + 0.5);
+    if (radio) { this.audio?.sfx?.('crackle', null); }
+    if (this.russian && window.speechSynthesis) {
+      try {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(ru);
+        u.voice = this.russian; u.lang = this.russian.lang; u.pitch = voice.pitch; u.rate = voice.rate; u.volume = radio ? 0.75 : 0.9;
+        window.speechSynthesis.speak(u);
+      } catch { /* (no voice: the subtitle alone) */ }
+    }
+  }
+
   update(dt, player) {
     const cam = this.camera;
     _pm.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse); _f.setFromProjectionMatrix(_pm);
@@ -116,7 +153,13 @@ export class Crew {
       _s.set(_v, 1.3);
       const vis = d < range && (d < 4 || _f.intersectsSphere(_s));
       if (vis !== p.vis) { p.vis = vis; p.root.visible = vis; }
-      if (vis) { p.setDetail(d < 14); p.update(dt); }
+      if (vis) {
+        p.setDetail(d < 14);
+        // (a person's shadow is a few draws of the whole body: only the near ones cast one)
+        const sh = d < 16;
+        if (sh !== p.shadowOn) { p.shadowOn = sh; p.root.traverse((o) => { if (o.isMesh && !p.small.includes(o) && o !== p.hit) o.castShadow = sh && !/hat|cap|glove|belt|hair|short0|scarf/i.test(((o.material && o.material.name) || '') + ' ' + o.name); }); }
+        p.update(dt);
+      }
       else p.t += dt;
     }
   }
@@ -141,7 +184,7 @@ export class Crew {
           p.step = (p.step + 1) % r.clips.length;
           if (p.step === 0 && r.spots.length > 1) {
             p.spotI = (p.spotI + 1) % r.spots.length;
-            p.target = this.model.spots[r.spots[p.spotI]].pos; p.state = 'walk';
+            this.go(p, this.model.spots[r.spots[p.spotI]].pos); p.state = 'walk';
             p.play('walk', 0.4, 1);
             return;
           }
@@ -159,7 +202,11 @@ export class Crew {
       return;
     }
     if (p.state === 'walk') {
-      const t = p.target;
+      const fin = p.target;
+      // the next corner of the route (the last one is the target itself)
+      while (p.route && p.ri < p.route.length - 1 && Math.hypot(p.route[p.ri].x - pos.x, p.route[p.ri].z - pos.z) < 0.18) p.ri++;
+      const t = p.route ? p.route[Math.min(p.ri, p.route.length - 1)] : fin;
+      const last = !p.route || p.ri >= p.route.length - 1;
       const dx = t.x - pos.x, dz = t.z - pos.z, d = Math.hypot(dx, dz);
       // someone in the way (you): wait
       const ahead = (player.pos.x - pos.x) * dx + (player.pos.z - pos.z) * dz;
@@ -167,11 +214,11 @@ export class Crew {
       if (near) { p.play(r.pause?.[0] || 'idle', 0.4); p.blocked = true; return; }
       if (p.blocked) { p.blocked = false; p.play(r.clip || 'walk', 0.4, 1); }
       const speed = r.speed || WALK_SPEED;
-      if (d < 0.15) {
+      if (d < 0.15 && last) {
         if (r.path) {
           const path = this.model.paths[r.path];
           p.pathI = (p.pathI + 1) % path.length;
-          p.target = path[p.pathI];
+          this.go(p, path[p.pathI]);
           if (Math.random() < r.pause[1]) { p.state = 'job'; p.timer = 2 + Math.random() * 4; p.play(r.pause[0], 0.5); }
         } else {
           p.state = 'job'; p.step = 0;

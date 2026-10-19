@@ -58,3 +58,17 @@ input[type="checkbox"] { accent-color: var(--glow); width: 16px; height: 16px; }
 #toast { position: absolute; right: 24px; top: 22px; font-size: 14px; color: var(--ice); text-shadow: 0 1px 3px #000; opacity: 0; transition: opacity 0.4s; }
 #toast.on { opacity: 1; }
 #fps { position: absolute; right: 10px; bottom: 6px; margin: 0; font: 11px/1.35 Consolas, monospace; color: #9fe; text-shadow: 0 1px 2px #000; }
+
+/* the story: the objective (top left), the marker on its target, the end card */
+#objective { position: absolute; left: 24px; top: 22px; max-width: min(420px, 60vw); text-shadow: 0 1px 3px #000, 0 0 8px #000; }
+#objective #objtitle { font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--glow); font-weight: 700; }
+#objective #objtext { font-size: 15px; margin-top: 4px; line-height: 1.45; }
+#objective #objdist { font-size: 13px; margin-top: 6px; color: var(--ice); font-variant-numeric: tabular-nums; }
+#marker { position: absolute; transform: translate(-50%, -50%); text-align: center; pointer-events: none; }
+#marker .pip { width: 12px; height: 12px; margin: 0 auto; border: 2px solid var(--glow); transform: rotate(45deg); box-shadow: 0 0 6px rgba(0, 0, 0, 0.8); }
+#marker.edge .pip { border-width: 0 3px 3px 0; transform: rotate(calc(var(--ang) * -1 + 45deg - 90deg)); width: 14px; height: 14px; }
+#marker #mlabel { margin-top: 6px; font-size: 12px; letter-spacing: 0.06em; color: var(--glow); text-shadow: 0 1px 3px #000, 0 0 6px #000; white-space: nowrap; }
+#endcard { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(2, 8, 14, 0.55); z-index: 25; padding: 16px; }
+#endcard .panel { width: min(560px, 100%); background: var(--panel); border: 1px solid var(--line); padding: 28px 32px 24px; backdrop-filter: blur(6px); text-align: center; }
+#endcard .title { font-size: clamp(32px, 5vw, 48px); }
+#endcard p { line-height: 1.6; margin: 18px 0 22px; }

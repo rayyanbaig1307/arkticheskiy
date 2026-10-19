@@ -72,6 +72,7 @@ export class IceField {
         for (let tries = 0; tries < 8 && !ok; tries++) {
           x = cx + (r() - 0.5) * TILE; z = cz + (r() - 0.5) * TILE;
           ok = true;
+          if (this.exclude?.(x, z, shape.radius * scale)) { ok = false; continue; }
           if (near0 && Math.hypot(x, z) < 150 + shape.radius * scale) ok = false;
           for (const p of pieces) if (Math.hypot(p.x - x, p.z - z) < (p.shape.radius * p.scale + shape.radius * scale) * 1.2 + c.minGap * 0.3) { ok = false; break; }
         }

@@ -11,6 +11,11 @@ import { clamp, damp, angleDiff } from '../core/util.js';
 // and sides through springs (roll the least damped), plus a heel into turns. Ice: IceField.js
 // tests her hull circles against the bergs and floes and calls hit(), which costs speed and shakes
 // the camera.
+//
+// Berthing (the story's end: Story.js): dock() eases her in alongside onto the berth's pose over
+// some seconds (the swell dying away under her in the ice's lee), and then she is moored: held
+// exactly still, level and on her marks, so the ice and the gangway can join her deck (her
+// collision takes them in boat space). castOff() lets her go again.
 
 export const ORDERS = [
   { name: 'STOP', ru: 'СТОП', speed: 0 },
@@ -44,6 +49,53 @@ export class Boat {
     this.trailT = 0;
     this.rpm = 0.5;                                 // 0 off .. 1 full (engine sound, gauges)
     this.load = 0;                                  // extra effort from ice (sound)
+    this.docking = null;                            // { t, dur, from, to } while she's brought alongside
+    this.moored = false;
+  }
+
+  dock(to, seconds = 24) {
+    this.docking = { t: 0, dur: seconds, from: { x: this.x, z: this.z, h: this.heading }, to };
+    this.autopilot = false; this.helm = 0;
+    this.emit('docking', to);
+  }
+
+  castOff() {
+    this.moored = false; this.docking = null;
+    this.speed = 0; this.autopilot = true;
+    this.emit('castoff');
+  }
+
+  updateBerthing(dt) {
+    const d = this.docking;
+    let k = 1;
+    if (d) {
+      d.t += dt;
+      const u = Math.min(1, d.t / d.dur);
+      k = u * u * (3 - 2 * u);
+      const px = this.x, pz = this.z;
+      this.x = d.from.x + (d.to.x - d.from.x) * k;
+      this.z = d.from.z + (d.to.z - d.from.z) * k;
+      this.heading = d.from.h + angleDiff(d.from.h, d.to.heading) * k;
+      this.speed = Math.hypot(this.x - px, this.z - pz) / Math.max(dt, 1e-4);
+      if (u >= 1) { this.docking = null; this.moored = true; this.speed = 0; this.emit('moored'); }
+    }
+    this.yawRate = 0; this.rudder = damp(this.rudder, 0, 2, dt);
+    this.rpm = damp(this.rpm, this.engineOn ? (d ? 0.32 : 0.22) : 0, 1.2, dt);
+    this.load = damp(this.load, 0, 1.5, dt);
+    // the swell dies away in the ice's lee; moored, she lies dead still and level
+    if (this.moored) { this.heave = 0; this.pitch = 0; this.roll = 0; this.vHeave = this.vPitch = this.vRoll = 0; }
+    else {
+      this.ride(dt, -Math.sin(this.heading), -Math.cos(this.heading));
+      const calm = 1 - k;
+      this.heave *= calm + (1 - calm) * Math.exp(-dt * 2); this.pitch *= calm + (1 - calm) * Math.exp(-dt * 2); this.roll *= calm + (1 - calm) * Math.exp(-dt * 2);
+    }
+    this.shake = Math.max(0, this.shake - dt * 1.4);
+    _e.set(this.pitch, this.heading, this.roll, 'YXZ');
+    this.root.quaternion.setFromEuler(_e);
+    this.root.position.set(this.x, this.heave, this.z);
+    this.root.updateMatrix();
+    this.root.matrixWorld.copy(this.root.matrix);
+    for (const p of this.trail) p.t += dt;
   }
 
   get forward() { return new THREE.Vector3(-Math.sin(this.heading), 0, -Math.cos(this.heading)); }
@@ -68,6 +120,7 @@ export class Boat {
   }
 
   update(dt) {
+    if (this.docking || this.moored) { this.updateBerthing(dt); return; }
     // speed: toward the order, slowly (and slower still to stop: she carries her way)
     const want = this.targetSpeed;
     const accel = want > this.speed ? 0.22 : 0.12;

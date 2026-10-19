@@ -33,8 +33,9 @@ for (const rel of files) {
   const src = join(rawDir, rel), dst = join(outDir, rel);
   mkdirSync(dirname(dst), { recursive: true });
   // -cc: meshopt compression (higher ratio); -kn/-km/-ke: keep named nodes, materials, extras;
-  // -vpf: positions as floats (exact collision geometry, no per-mesh dequantization surprises)
-  const args = ['-i', src, '-o', dst, '-cc', '-kn', '-km', '-ke', '-vpf'];
+  // -vpf: positions as floats (exact collision geometry, no per-mesh dequantization surprises);
+  // -vtf: texture coordinates as floats (box-mapped UVs run over the whole boat: 12 bits smear them)
+  const args = ['-i', src, '-o', dst, '-cc', '-kn', '-km', '-ke', '-vpf', '-vtf'];
   const r = spawnSync(process.execPath, [cli, ...args], { encoding: 'utf8' });
   if (r.status !== 0) { console.error(name, 'FAILED\n', r.stderr || r.stdout); process.exitCode = 1; continue; }
   const a = statSync(src).size, b = statSync(dst).size;

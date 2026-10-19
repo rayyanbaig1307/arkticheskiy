@@ -19,9 +19,13 @@ here. No third-party images, recordings or models are used.
 All models were built with Python scripts run inside Blender 5.2 (`tools/blender/`), procedurally,
 for this game:
 
-- **The tug *Polyarnik*** (`make_tug.py`): lofted hull, superstructure, interiors, machinery, the
-  plating and deck normal maps (generated with numpy). The lettering ПОЛЯРНИК / МУРМАНСК uses
-  Blender's built-in font (free licence), converted to geometry.
+- **The tug *Polyarnik*** (`make_tug.py` and the `tug_*.py` scripts): lofted hull,
+  superstructure, the mess, galley, hall, lobby, wheelhouse and engine room with their furniture,
+  instruments and machinery, the deck gear and the towing winch. All lettering (the name
+  ПОЛЯРНИК / МУРМАНСК, the signs, labels and notices) uses Blender's built-in font (free
+  licence), converted to geometry.
+- **Station Severny** (`make_station.py`): the fast-ice shelf, the station's buildings, radio
+  mast, fuel tanks, weather mast, lamp posts, berth and gangway.
 - **Icebergs, growlers and floes** (`make_icebergs.py`): voxel-remeshed primitives, calving cuts
   and noise displacement.
 - **Walrus and penguin** (`make_animals.py`): lofted bodies, hand-built skeletons, keyed clips,
@@ -45,9 +49,13 @@ Licences as recorded in the MPFB asset packs' metadata (`packs/*.json`) and the 
 
 ## Textures
 
-None are downloaded. Everything is generated: the hull plating and deck normal maps, the quilted
-and camouflage cloth, fur and knit (numpy, in Blender); the sea's detail normals and foam cells,
-the sky, stars, moon and aurora (in code and shaders, at runtime).
+None are downloaded. Everything is generated: the boat's PBR texture sets (`texlib.py`: painted
+steel with weld seams, rust runs and grime; the weathered hull with its ice-scraped belt; deck
+paint; laminate and wood-grain linings; linoleum, studded rubber, diamond plate and grating
+floors; perforated ceiling panels; varnished wood, vinyl upholstery, gingham oilcloth, brushed
+steel, rubber, braided rope), the quilted and camouflage cloth, fur and knit (numpy, in Blender);
+the sea's detail normals and foam cells, the snow's relief, the sky, stars, moon and aurora (in
+code and shaders, at runtime).
 
 ## Voices
 
@@ -96,6 +104,9 @@ live graph (beds, HRTF panners, the indoor muffle, reverbs), and `Music.js` play
   crackle. The mess radio's waltz is an original tune on Karplus-Strong strings (allpass-tuned)
   through a small-speaker filter. The kettle is a noise boil with bubble chirps and a two-sine
   whistle with breath noise and random vibrato.
+- **The towing winch**: a hydraulic motor's hum (a sawtooth through a lowpass) with a triangle
+  whine and the pump's pink-noise hiss, and the line creaking on the drum (a resonant band of
+  brown noise), all following the drum's speed.
 - **Music**: OscillatorNodes only: a drone on D, slow modal pad chords from a soft periodic wave,
   and sparse FM glass bells, in a generated long reverb.
 - **Space**: the reverbs are generated impulse responses (decaying, darkening noise with early

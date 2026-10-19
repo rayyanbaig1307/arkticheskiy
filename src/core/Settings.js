@@ -30,6 +30,7 @@ export const QUALITY = {
 const KEY = 'arctic-tug.settings.v1';
 const DEFAULTS = {
   quality: 'medium',
+  mode: 'story',
   timeOfDay: 'night',
   volume: 0.8,
   music: true,

@@ -37,6 +37,7 @@ export class Collision {
     this.mesh = new THREE.Mesh(this.geometry, new THREE.MeshBasicMaterial({ wireframe: true, color: 0xff00ff }));
     this.mesh.visible = false;
     this.boxes = [];       // { box: Box3, on: bool } (the doors)
+    this.extras = [];      // more BVHs in boat space (the ice and the gangway while she's moored)
     this.raycaster = new THREE.Raycaster();
     this.raycaster.firstHitOnly = true;
     this.tris = this.geometry.index.count / 3;
@@ -44,11 +45,37 @@ export class Collision {
 
   addBox(box) { const b = { box, on: true }; this.boxes.push(b); return b; }
 
+  // more geometry to walk on and bump into (boat space), and away again
+  addExtra(geometries) {
+    const geos = geometries.map((g) => {
+      const c = g.clone();
+      for (const k of Object.keys(c.attributes)) if (k !== 'position') c.deleteAttribute(k);
+      const a = c.attributes.position;
+      if (!(a.array instanceof Float32Array) || a.normalized) {
+        const f = new Float32Array(a.count * 3);
+        for (let i = 0; i < a.count; i++) { f[i * 3] = a.getX(i); f[i * 3 + 1] = a.getY(i); f[i * 3 + 2] = a.getZ(i); }
+        c.setAttribute('position', new THREE.BufferAttribute(f, 3));
+      }
+      return c.index ? c : c.setIndex([...Array(c.attributes.position.count).keys()]);
+    });
+    const g = mergeGeometries(geos, false);
+    const e = { bvh: new MeshBVH(g, { maxLeafSize: 8 }), geometry: g };
+    this.extras.push(e);
+    return e;
+  }
+  removeExtra(e) { const i = this.extras.indexOf(e); if (i >= 0) this.extras.splice(i, 1); }
+
   // push a capsule (segment start..end, radius) out of everything; returns it moved
   resolve(seg, radius) {
+    for (const bvh of [this.bvh, ...this.extras.map((e) => e.bvh)]) this.resolveIn(bvh, seg, radius);
+    this.resolveBoxes(seg, radius);
+    return seg;
+  }
+
+  resolveIn(bvh, seg, radius) {
     _box.makeEmpty(); _box.expandByPoint(seg.start); _box.expandByPoint(seg.end);
     _box.min.addScalar(-radius); _box.max.addScalar(radius);
-    this.bvh.shapecast({
+    bvh.shapecast({
       intersectsBounds: (b) => b.intersectsBox(_box),
       intersectsTriangle: (tri) => {
         const dist = tri.closestPointToSegment(seg, _tri, _cap);
@@ -60,6 +87,9 @@ export class Collision {
         }
       },
     });
+  }
+
+  resolveBoxes(seg, radius) {
     for (const b of this.boxes) {
       if (!b.on) continue;
       // the closest point of the box to the segment (sampled along it), pushed out if inside radius
@@ -77,11 +107,30 @@ export class Collision {
     return seg;
   }
 
+  // does a capsule touch anything solid (the BVH; not the doors)?
+  touches(seg, radius) {
+    _box.makeEmpty(); _box.expandByPoint(seg.start); _box.expandByPoint(seg.end);
+    _box.min.addScalar(-radius); _box.max.addScalar(radius);
+    let hit = false;
+    this.bvh.shapecast({
+      intersectsBounds: (b) => b.intersectsBox(_box),
+      intersectsTriangle: (tri) => {
+        if (tri.closestPointToSegment(seg, _tri, _cap) < radius) { hit = true; return true; }
+        return false;
+      },
+    });
+    return hit;
+  }
+
   // the first hit along a ray in boat space (distance, or Infinity)
   raycast(origin, dir, far = 50) {
     this.raycaster.set(origin, dir); this.raycaster.far = far;
     const hit = this.bvh.raycastFirst(this.raycaster.ray, THREE.DoubleSide, 0, far);
     let best = hit ? hit.distance : Infinity;
+    for (const e of this.extras) {
+      const h = e.bvh.raycastFirst(this.raycaster.ray, THREE.DoubleSide, 0, far);
+      if (h && h.distance < best) best = h.distance;
+    }
     for (const b of this.boxes) {
       if (!b.on) continue;
       const p = this.raycaster.ray.intersectBox(b.box, _p);

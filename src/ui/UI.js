@@ -14,6 +14,14 @@ export class UI {
     this.onPlay = null; this.onTime = null; this.onVolume = null; this.onMusic = null;
     const s = settings;
     $('quality').value = s.quality; $('time').value = s.timeOfDay; $('volume').value = s.volume;
+    if ($('mode')) {
+      $('mode').value = s.mode || 'story';
+      $('mode').addEventListener('change', (e) => {
+        s.mode = e.target.value; saveSettings(s);
+        $('qnote').textContent = 'Starting the voyage again...';
+        setTimeout(() => location.reload(), 300);
+      });
+    }
     $('music').checked = s.music; $('sens').value = s.sensitivity;
     $('play').addEventListener('click', () => this.onPlay?.());
     $('quality').addEventListener('change', (e) => {

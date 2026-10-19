@@ -204,6 +204,40 @@ export class Audio {
     } catch (e) { this._err(e); }
   }
 
+  // the towing winch: a hydraulic motor's hum and whine, its pump's hiss, the line creaking on the
+  // drum (level 0 .. 1, every frame while it might be running)
+  winch(level, worldPos) {
+    if (!this.built) return;
+    try {
+      const now = this.ctx.currentTime;
+      const lv = clamp(num(level, 0), 0, 1);
+      if (!this.win) {
+        if (lv < 0.01) return;
+        const W = {};
+        W.out = this._gain(0); W.p = this._panner(4, 1.1);
+        W.out.connect(W.p); W.p.connect(this.outBus);
+        W.osc = this.ctx.createOscillator(); W.osc.type = 'sawtooth'; W.osc.frequency.value = 40;
+        const lp = this._filter('lowpass', 420, 0.9), og = this._gain(0.35);
+        W.osc.connect(lp); lp.connect(og); og.connect(W.out); W.osc.start();
+        W.whine = this.ctx.createOscillator(); W.whine.type = 'triangle'; W.whine.frequency.value = 520;
+        const wg = this._gain(0.02); W.whine.connect(wg); wg.connect(W.out); W.whine.start();
+        const hs = this._loop(this.pink, 1.3), hbp = this._filter('bandpass', 2400, 0.8), hg = this._gain(0.1);
+        hs.connect(hbp); hbp.connect(hg); hg.connect(W.out);
+        const cr = this._loop(this.brown, 0.7), cbp = this._filter('bandpass', 260, 3);
+        W.creak = this._gain(0);
+        cr.connect(cbp); cbp.connect(W.creak); W.creak.connect(W.out);
+        this.win = W;
+      }
+      const W = this.win;
+      const p = posOf(worldPos);
+      if (p) this._move(W.p, p.x, p.y, p.z, now);
+      W.out.gain.setTargetAtTime(lv * 0.9, now, 0.15);
+      W.osc.frequency.setTargetAtTime(36 + lv * 28, now, 0.2);
+      W.whine.frequency.setTargetAtTime(400 + lv * 400, now, 0.25);
+      W.creak.gain.setTargetAtTime(lv * (0.2 + 0.25 * Math.sin(now * 7.3) ** 2), now, 0.05);
+    } catch (e) { this._err(e); }
+  }
+
   engineStart() {
     if (!this.built || !this.eng) return;
     try {
@@ -673,7 +707,7 @@ export class Audio {
     sh.curve = curve;
     st.vG = this._gain(0.5);
     st.vIn.connect(vhp); vhp.connect(vlp); vlp.connect(sh); sh.connect(pk); pk.connect(st.vG); st.vG.connect(st.out);
-    st.mIn = this._gain(0.4); st.mIn.connect(st.vIn);
+    st.mIn = this._gain(0.22); st.mIn.connect(st.vIn);
     st.built = true;
   }
 
@@ -685,7 +719,7 @@ export class Audio {
       w.connect(st.sIn); c.connect(st.cIn);
       st.srcs = [w, c];
       if (st.mode === 'music') { const m = this._loop(this.bank.get('radio_music'), Math.random() * 14); m.connect(st.mIn); st.srcs.push(m); }
-      st.out.gain.setTargetAtTime(1, now, 0.12);              // (the old set warms up)
+      st.out.gain.setTargetAtTime(st.mode === 'music' ? 0.32 : 0.6, now, 0.12);   // (the old set warms up; a quiet one)
       st.nextBurst = now + rnd(1.2, 3.5);
     } else if (!st.want && st.on) {
       st.on = false;

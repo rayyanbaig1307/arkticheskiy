@@ -32,6 +32,8 @@ export class Interactions {
 
   addBlockers(meshes) { this.blockers.push(...meshes); }
 
+  remove(object) { this.targets = this.targets.filter((t) => t.object !== object); }
+
   update() {
     if (!this.enabled) { this.current = null; this.ui.hint(''); return; }
     this.ray.setFromCamera(_c, this.camera);

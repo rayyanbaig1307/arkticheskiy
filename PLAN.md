@@ -108,3 +108,27 @@ public/models/           exported GLBs
 - **Performance.** Boat meshes are joined by material in Blender; animals and people beyond range
   freeze their mixers and hide; post FX, reflections, shadows, snow count and wave count scale with
   the preset.
+
+
+## Second pass (October 2026)
+
+What changed after the first playable version, from the first player's notes:
+
+- **No more static**: the film grain read as TV static; it is gone (a one-step dither keeps the
+  dark gradients clean).
+- **Reflections**: three's CSM add-on installs an old copy of the lights chunk without the DFG
+  table, which zeroed every material's reflections; the lines are put back (world/Lighting.js).
+  The rooms are photographed into their own reflection probes (boat/Probes.js).
+- **Interiors rebuilt** (tools/blender/tug_rooms.py, tug_bridge.py, tug_engine.py): linings with
+  wainscot and chair rails, ceiling panels, linoleum and rubber floors; the mess with its benches,
+  oilcloth table and galley; the hall with coats, lockers and signs; the wheelhouse console,
+  overhead repeaters, the ship's wheel, chairs and chart table; the engine room's two diesels,
+  generator, boiler, pumps, air bottles, pipework, switchboard and workbench.
+- **Textures** (tools/blender/texlib.py): generated, tileable PBR sets for every surface, the hull
+  with its own weathered map. Tinted variants fold into one material each (vertex colours).
+- **The towline** (boat/Towline.js): 220 m on the drum, simulated past the roller (weight,
+  buoyancy, drag, the swell), reeled in and paid out from the winch's stand.
+- **The crew** route round everything (characters/Nav.js: a grid over the collision mesh).
+- **The radio** starts switched off and plays quietly.
+- **The story** (story/Story.js): the run to Station Severny (world/Station.js,
+  tools/blender/make_station.py), berthing alongside, the gangway, the walk ashore.

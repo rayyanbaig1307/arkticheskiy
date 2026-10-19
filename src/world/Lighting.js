@@ -9,6 +9,27 @@ import { atmos, chainCompile, withAtmos } from './Atmos.js';
 // Every lit material goes through prep(): CSM's shader setup first (it replaces onBeforeCompile),
 // then the shared atmosphere uniforms chained after it, then any of the game's own patches.
 
+// CSM installs its own copy of three's lights_fragment_begin chunk, and its copy is older than
+// three's: it lacks the lines that read the DFG table (material.dfg) and the multi-scattering
+// compensation. Without them every physical material's reflections come out zero (the
+// environment's, the lamps' and the moon's highlights alike): metal goes black, paint, varnish
+// and glass lose their sheen. The lines (from three r186's own chunk) go back in.
+const STANDARD_DFG = /* glsl */ `
+#ifdef STANDARD
+	float dotNVms = saturate( dot( geometryNormal, geometryViewDir ) );
+	material.dfg = texture2D( dfgLUT, vec2( material.roughness, dotNVms ) ).rg;
+	#if ( NUM_SUN_LIGHTS > 0 || NUM_DIR_LIGHTS > 0 || NUM_POINT_LIGHTS > 0 || NUM_SPOT_LIGHTS > 0 )
+		float EssMs = material.dfg.x + material.dfg.y;
+		material.multiScatteringCompensation = 1.0 + material.specularColorBlended * ( 1.0 / EssMs - 1.0 );
+	#endif
+#endif
+`;
+function restoreSpecular() {
+  const C = THREE.ShaderChunk;
+  if (C.lights_fragment_begin.includes('material.dfg')) return;
+  C.lights_fragment_begin = C.lights_fragment_begin.replace('IncidentLight directLight;', STANDARD_DFG + '\nIncidentLight directLight;');
+}
+
 export class Lighting {
   constructor({ scene, camera, quality }) {
     this.scene = scene;
@@ -31,6 +52,7 @@ export class Lighting {
       l.shadow.normalBias = 0.04;
       l.castShadow = true;
     }
+    restoreSpecular();
     this.prepared = new WeakSet();
   }
 

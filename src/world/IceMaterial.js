@@ -63,6 +63,17 @@ export function makeIceMaterial(lighting, waves) {
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.93, .96, 1.), foamLine * .8 * smoothstep(.45, .7, iceN(vIceWorld * vec3(3., 9., 3.) + vec3(0., uWaveTime * .6, 0.))));`)
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
         roughnessFactor = mix(mix(.28 + grain * .2, .85, snow), .08, wet);`)
+      .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+        {
+          // the snow's surface: wind ripples (sastrugi) and grain, a little relief in the light
+          vec3 sp = vIceWorld;
+          float se = .06;
+          float h0 = iceN(vec3(sp.x * .55, 0., sp.z * 1.9)) * .7 + iceN(sp * 4.3) * .3;
+          float hx = iceN(vec3((sp.x + se) * .55, 0., sp.z * 1.9)) * .7 + iceN((sp + vec3(se, 0., 0.)) * 4.3) * .3;
+          float hz = iceN(vec3(sp.x * .55, 0., (sp.z + se) * 1.9)) * .7 + iceN((sp + vec3(0., 0., se)) * 4.3) * .3;
+          vec3 bw = vec3(h0 - hx, 0., h0 - hz) / se * .05 * snow * (1. - wet);
+          normal = normalize(normal + (viewMatrix * vec4(bw, 0.)).xyz);
+        }`)
       .replace('#include <opaque_fragment>', `
         {
           // light scattered inside the ice: from the sky (all round) and the key light (wrapped
