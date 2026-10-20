@@ -49,6 +49,12 @@ export class Radar {
     this.drawT = 0.125;
     const c = this.ctx, S = SIZE, R = S * 0.46, cx = S / 2, cy = S / 2;
     c.fillStyle = '#010a05'; c.fillRect(0, 0, S, S);
+    // (dead: its fuse gone, the screen black, now and then a twitch of the trace)
+    if (this.dead) {
+      if (Math.random() < 0.06) { c.fillStyle = 'rgba(40,255,120,0.15)'; c.fillRect(0, cy + (Math.random() - 0.5) * S * 0.6, S, 2); }
+      if (this.tex) this.tex.needsUpdate = true;
+      return;
+    }
     // the sweep's afterglow
     for (let k = 0; k < 12; k++) {
       const a0 = this.angle - (k + 1) * 0.09, a1 = this.angle - k * 0.09;

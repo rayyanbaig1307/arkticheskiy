@@ -749,7 +749,7 @@ def export(sc):
     return path, size
 
 if __name__ == '__main__' or True:
-    ROOT_ = globals().get('ROOT', r'C:\Users\black\OneDrive\Desktop\Arctic Tug')
+    ROOT_ = globals().get('ROOT', r'C:\Users\black\OneDrive\Desktop\Arkticheskiy')
     sc, made = build(ROOT_)
     result = report(sc)
     if globals().get('EXPORT', True):

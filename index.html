@@ -3,12 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Polyarnik: Arctic Tug</title>
+  <title>Арктический</title>
   <link rel="stylesheet" href="./src/ui/styles.css" />
 </head>
 <body>
   <canvas id="game"></canvas>
 
+  <!-- the HUD: these pieces are shared by every part of the game; ui/HorrorHUD.js adds the rest -->
   <div id="hud" class="hidden">
     <div id="crosshair"></div>
     <div id="hint"></div>
@@ -21,24 +22,29 @@
   </div>
 
   <div id="loading">
-    <div class="title">ПОЛЯРНИК</div>
+    <div class="title">АРКТИЧЕСКИЙ</div>
     <div class="bar"><div id="loadfill"></div></div>
     <div id="loadtext">Loading</div>
   </div>
 
-  <div id="menu" class="hidden">
+  <!-- the title screen, and the pause menu once play has begun -->
+  <div id="menu" class="hidden title">
     <div class="panel">
-      <div class="title">ПОЛЯРНИК</div>
-      <div class="subtitle">Arctic Tug &middot; Barents Sea, the polar night</div>
-      <button id="play" class="primary">Click to play</button>
+      <div class="brand">
+        <div class="title">АРКТИЧЕСКИЙ</div>
+        <div class="rule"></div>
+        <div class="subtitle"><b>Остров Северный · полярная ночь</b><span>Survival horror on Severny Island, in the polar night</span></div>
+        <div class="paused-tag pause-only">Пауза <span>Paused</span></div>
+      </div>
+      <div class="actions">
+        <button id="newgame" class="primary title-only"><span>Новая игра</span><small>New game</small></button>
+        <button id="continue" class="title-only hidden"><span>Продолжить</span><small>Continue</small></button>
+        <button id="play" class="primary pause-only"><span>Вернуться</span><small>Resume</small></button>
+        <button id="checkpoint" class="pause-only hidden"><span>К последней точке</span><small>Back to the last checkpoint</small></button>
+        <button id="quit" class="pause-only"><span>В главное меню</span><small>Quit to the title</small></button>
+      </div>
       <div class="cols">
         <div class="settings">
-          <label>Voyage
-            <select id="mode">
-              <option value="story">Story: the run to Station Severny</option>
-              <option value="free">Free voyage</option>
-            </select>
-          </label>
           <label>Graphics
             <select id="quality">
               <option value="low">Low</option>
@@ -46,32 +52,30 @@
               <option value="high">High</option>
             </select>
           </label>
-          <label>Time of day
-            <select id="time">
-              <option value="night">Polar night (aurora)</option>
-              <option value="sunset">Sunset</option>
-              <option value="overcast">Overcast day</option>
-            </select>
-          </label>
           <label>Volume <input id="volume" type="range" min="0" max="1" step="0.01" /></label>
-          <label class="check"><input id="music" type="checkbox" /> Ambient music</label>
+          <label class="check"><input id="music" type="checkbox" /> Music</label>
           <label>Mouse sensitivity <input id="sens" type="range" min="0.3" max="2.5" step="0.05" /></label>
           <div id="qnote" class="note"></div>
         </div>
         <div class="controls">
-          <div><b>W A S D</b> walk</div>
-          <div><b>Mouse</b> look</div>
-          <div><b>Shift</b> run</div>
-          <div><b>E</b> use, talk, take the wheel</div>
-          <div><b>W / S</b> on a ladder: climb</div>
-          <div><b>At the wheel</b> A / D steer, W / S engine order</div>
-          <div><b>H</b> sound the horn (at the wheel)</div>
-          <div><b>E</b> at the winch stand: heave in, pay out the towline</div>
-          <div><b>Esc</b> pause</div>
-          <div><b>F3</b> frame rate</div>
+          <b>W A S D</b><span>walk</span>
+          <b>Shift</b><span>run</span>
+          <b>C</b><span>crouch: quieter, lower</span>
+          <b>E</b><span>use, pick up, hide in a locker</span>
+          <b>F</b><span>flashlight</span>
+          <b>Left mouse</b><span>fire</span>
+          <b>Right mouse</b><span>aim</span>
+          <b>R</b><span>reload</span>
+          <b>1 2 3 4</b><span>Makarov, Mosin, AKM, flare pistol</span>
+          <b>Wheel</b><span>next weapon</span>
+          <b>Q</b><span>holster</span>
+          <b>G</b><span>light and throw a hand flare</span>
+          <b>H</b><span>use a medkit</span>
+          <b>Tab</b><span>journal: items, documents, objective</span>
+          <b>Esc</b><span>pause</span>
         </div>
       </div>
-      <div class="foot">Headphones recommended. Sounds start when you click.</div>
+      <div class="foot">Headphones, and the lights off. Sound starts when you click.</div>
     </div>
   </div>
 

@@ -450,7 +450,7 @@ def report(sc):
     return {'tris': sum(C.tris(o) for o in objs if not o.name.startswith('COL_')), 'objects': len(objs), 'col': sum(C.tris(o) for o in objs if o.name.startswith('COL_'))}
 
 if __name__ == '__main__' or True:
-    ROOT_ = globals().get('ROOT', r'C:\Users\black\OneDrive\Desktop\Arctic Tug')
+    ROOT_ = globals().get('ROOT', r'C:\Users\black\OneDrive\Desktop\Arkticheskiy')
     sc = build(ROOT_)
     result = report(sc)
     if globals().get('EXPORT', True):

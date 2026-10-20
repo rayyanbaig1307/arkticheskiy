@@ -17,12 +17,19 @@ export class Voices {
   constructor(audio) {
     this.audio = audio;
     this.byLine = new Map();          // who + '\n' + ru -> { file, ... }
+    this.byRu = new Map();            // ru -> a recording of those words (when the speaker doesn't match)
     this.raw = new Map();             // file -> Promise<ArrayBuffer | null>
     this.clips = new Map();           // file -> Promise<AudioBuffer | null>
     this.loaded = false;              // (the index is in)
     this.ready = fetch(asset('audio/vo/index.json'))
       .then((r) => (r.ok && /json/.test(r.headers.get('content-type') || '') ? r.json() : {}))
-      .then((idx) => { for (const e of Object.values(idx || {})) if (e && e.file && e.who && e.ru) this.byLine.set(e.who + '\n' + e.ru, e); })
+      .then((idx) => {
+        for (const e of Object.values(idx || {})) {
+          if (!e || !e.file || !e.who || !e.ru) continue;
+          this.byLine.set(e.who + '\n' + e.ru, e);
+          if (!this.byRu.has(e.ru)) this.byRu.set(e.ru, e);
+        }
+      })
       .catch(() => { /* no recordings: every line is spoken the old way */ })
       .then(() => { this.loaded = true; for (const [who, ru] of this.later.values()) this.prefetch(who, ru); this.later.clear(); });
     this.later = new Map();           // prefetches asked for before the index was in
@@ -30,7 +37,7 @@ export class Voices {
 
   get count() { return this.byLine.size; }
 
-  find(who, ru) { return this.byLine.get(who + '\n' + ru) || null; }
+  find(who, ru) { return this.byLine.get(who + '\n' + ru) || this.byRu.get(ru) || null; }
 
   prefetch(who, ru) {
     if (!this.loaded) { this.later.set(who + '\n' + ru, [who, ru]); return; }

@@ -1,4 +1,4 @@
-# ПОЛЯРНИК — Arctic Tug: plan
+# АРКТИЧЕСКИЙ: plan (the first versions, as the tug walk; see DESIGN.md for the horror game)
 
 A first-person walk around a Russian icebreaker tug, the *Polyarnik* (ПОЛЯРНИК), as it pushes
 through an Arctic ice field at night. Three.js in the browser, with every model built and animated

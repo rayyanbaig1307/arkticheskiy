@@ -107,18 +107,21 @@ export class Collision {
     return seg;
   }
 
-  // does a capsule touch anything solid (the BVH; not the doors)?
+  // does a capsule touch anything solid (the BVH and the extras ashore; not the doors)?
   touches(seg, radius) {
     _box.makeEmpty(); _box.expandByPoint(seg.start); _box.expandByPoint(seg.end);
     _box.min.addScalar(-radius); _box.max.addScalar(radius);
     let hit = false;
-    this.bvh.shapecast({
-      intersectsBounds: (b) => b.intersectsBox(_box),
-      intersectsTriangle: (tri) => {
-        if (tri.closestPointToSegment(seg, _tri, _cap) < radius) { hit = true; return true; }
-        return false;
-      },
-    });
+    for (const bvh of [this.bvh, ...this.extras.map((e) => e.bvh)]) {
+      bvh.shapecast({
+        intersectsBounds: (b) => b.intersectsBox(_box),
+        intersectsTriangle: (tri) => {
+          if (tri.closestPointToSegment(seg, _tri, _cap) < radius) { hit = true; return true; }
+          return false;
+        },
+      });
+      if (hit) break;
+    }
     return hit;
   }
 

@@ -27,7 +27,7 @@ export const QUALITY = {
   },
 };
 
-const KEY = 'arctic-tug.settings.v1';
+const KEY = 'arkticheskiy.settings.v1';
 const DEFAULTS = {
   quality: 'medium',
   mode: 'story',

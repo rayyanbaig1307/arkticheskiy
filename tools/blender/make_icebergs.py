@@ -361,7 +361,7 @@ def build(root):
     return sc, made, lay
 
 if __name__ == '__main__' or True:
-    ROOT_ = globals().get('ROOT', r'C:\Users\black\OneDrive\Desktop\Arctic Tug')
+    ROOT_ = globals().get('ROOT', r'C:\Users\black\OneDrive\Desktop\Arkticheskiy')
     sc, made, lay = build(ROOT_)
     result = {o.name: [round(v, 1) for v in o.dimensions] + [C.tris(o)] for o in made}
     if globals().get('EXPORT', True):

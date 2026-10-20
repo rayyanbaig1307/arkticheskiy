@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { RECIPES, ENGINE_F0, rng, noise, makeIR, wobble } from './Synth.js';
 import { Music } from './Music.js';
+import { HorrorAudio } from './Horror.js';
 
 // The game's sound, every bit of it made in code (audio/Synth.js has the recipes, audio/Music.js the
 // score) except the spoken lines, which are recordings (audio/Voices.js loads them, playBuffer()
@@ -21,7 +22,8 @@ import { Music } from './Music.js';
 // of a bank of pre-rendered variants (rendered when first wanted, or in idle time just after start),
 // played with a little random pitch and level, 24 at most at once. Every parameter moves with
 // setTargetAtTime, and update() allocates nothing. Every public method is safe to call before
-// start() and never throws.
+// start() and never throws. The horror's sounds (guns, creatures, scares, the places' beds, your
+// heart) are audio/Horror.js, built on this graph at start and reached as audio.horror.
 
 const MAX_VOICES = 24;
 const MUSIC_LEVEL = 0.165;                // (about 18 dB under the outdoor beds)
@@ -377,6 +379,7 @@ export class Audio {
     this._buildWind();
     this._buildSea();
     this._buildEngine();
+    this.horror = new HorrorAudio(this);
     this.built = true;
     for (const st of this.radioList) this._radioApply(st, now);
     if (this.kettleSt.want) this._kettleApply(now);
@@ -535,6 +538,7 @@ export class Audio {
     if (this.slowT >= 0.05) { const sdt = this.slowT; this.slowT = 0; this._slow(now, sdt); }
     this._events(dt);
     if (this.music) this.music.update(now);
+    if (this.horror) this.horror.update(dt, s);
   }
 
   // the listener rides the camera: its position, its forward (-Z) and its up (+Y)

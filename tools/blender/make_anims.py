@@ -356,5 +356,5 @@ def run(preview=False, export=True):
     return out
 
 if __name__ == '__main__' or True:
-    C.set_root(globals().get('ROOT', r'C:\Users\black\OneDrive\Desktop\Arctic Tug'))
+    C.set_root(globals().get('ROOT', r'C:\Users\black\OneDrive\Desktop\Arkticheskiy'))
     result = run(preview=globals().get('PREVIEW', False), export=globals().get('EXPORT', True))

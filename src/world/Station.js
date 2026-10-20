@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { tryGLB } from '../core/Assets.js';
 import { Flag } from '../boat/Flag.js';
+import { Level } from '../levels/Level.js';
 
 // Station Severny (СТАНЦИЯ «СЕВЕРНЫЙ»): the polar station on the fast ice, the Polyarnik's
 // destination (tools/blender/make_station.py → public/models/station.glb). It stands 2.4 km
@@ -29,7 +30,8 @@ export class Station {
     this.root.position.copy(STATION_POS);
     scene.add(this.root);
     this.ready = false;
-    this.lamps = []; this.nodes = {};
+    this.lamps = []; this.nodes = {}; this.lampMats = [];
+    this.dark = false;              // (no power: every lamp out, the beacon dead; the story's)
     // two lights for the lamps nearest the boat (made now: the light count never changes)
     this.lights = [0, 1].map(() => { const l = new THREE.PointLight(0xdde8ff, 0, 22, 2); scene.add(l); return l; });
     this.beaconT = 0;
@@ -45,18 +47,19 @@ export class Station {
       const n = o.name || '';
       this.nodes[n] = o;
       if (n.startsWith('COL_')) o.visible = false;
-      if (n.startsWith('LMP_')) {
+      if (n.startsWith('LMP_') && /^LMP_(path|door)/.test(n)) {
         const ud = o.userData || {};
         this.lamps.push({ pos: o.getWorldPosition(new THREE.Vector3()), color: new THREE.Color(...(ud.color || [0.9, 0.95, 1])), power: ud.power ?? 20, range: ud.range ?? 18 });
       }
       if (!o.isMesh || n.startsWith('COL_')) return;
+      if (n.startsWith('R_') || (o.parent?.name || '').startsWith('R_') || /^(DOOR|BLAST)_/.test(n) || /^(DOOR|BLAST)_/.test(o.parent?.name || '')) return;   // (the rooms: the level's)
       o.castShadow = true; o.receiveShadow = true;
       const mats = Array.isArray(o.material) ? o.material : [o.material];
       for (const mm of mats) {
         const mn = (mm.name || '').toLowerCase();
         if (/ice_shelf/.test(mn)) { o.material = this.iceMaterial; o.castShadow = false; continue; }
         if (/glass/.test(mn)) { mm.transparent = true; mm.opacity = 0.25; mm.depthWrite = false; }
-        if (/lamp/.test(mn)) mm.emissiveIntensity *= /beacon/.test(mn) ? 0.5 : 0.5;
+        if (/lamp/.test(mn)) { mm.emissiveIntensity *= /beacon/.test(mn) ? 0.5 : 0.5; if (!/beacon/.test(mn) && !this.lampMats.includes(mm)) { mm.userData.lit = mm.emissiveIntensity; this.lampMats.push(mm); } }
         this.lighting.prep(mm);
       }
     });
@@ -68,8 +71,12 @@ export class Station {
     this.gangway = this.nodes.GANGWAY || null;
     if (this.gangway) this.gangway.visible = false;
     this.flag = new Flag(this.nodes.FLAG_station);
-    // the collision (station space, here as world: the station never moves)
-    this.colMeshes = [this.nodes.COL_station, this.nodes.COL_gangway].filter(Boolean);
+    // the collision (station space, here as world: the station never moves): the ice, the island,
+    // the buildings and their rooms
+    this.colMeshes = Object.keys(this.nodes).filter((k) => k.startsWith('COL_') && this.nodes[k].isMesh).map((k) => this.nodes[k]);
+    // the rooms, their doors, the things in them (levels/Level.js reads the same model)
+    this.level = new Level({ name: 'station', adopt: m, lighting: this.lighting, scene: this.scene, lights: 4 });
+    await this.level.load();
     this.ready = true;
     return true;
   }
@@ -173,13 +180,18 @@ export class Station {
     this.beaconT += dt;
     const ph = this.beaconT % 2.4;
     const on = ph < 0.15 || (ph > 0.4 && ph < 0.55);
-    if (this.beacon) this.beacon.emissiveIntensity = on ? 12 : 0.4;
+    if (this.beacon) this.beacon.emissiveIntensity = this.dark ? 0.05 : on ? 12 : 0.4;
+    if (this._darkWas !== this.dark) {
+      this._darkWas = this.dark;
+      for (const m of this.lampMats) m.emissiveIntensity = this.dark ? 0 : m.userData.lit;
+      this.level?.setPower(!this.dark);
+    }
     // lights to the lamps nearest the boat (only when she's near)
     const d0 = boatPos.distanceTo(STATION_POS);
     const sorted = d0 < 700 ? [...this.lamps].sort((a, b) => a.pos.distanceToSquared(boatPos) - b.pos.distanceToSquared(boatPos)) : [];
     this.lights.forEach((l, i) => {
       const L = sorted[i];
-      if (!L) { l.intensity = 0; return; }
+      if (!L || this.dark) { l.intensity = 0; return; }
       l.position.copy(L.pos); l.color.copy(L.color); l.distance = L.range;
       l.intensity = L.power * (0.25 + 0.75 * night);
     });

@@ -403,7 +403,7 @@ def export(sc, name, arm, mesh):
     return [path, os.path.getsize(path)]
 
 if __name__ == '__main__' or True:
-    C.set_root(globals().get('ROOT', r'C:\Users\black\OneDrive\Desktop\Arctic Tug'))
+    C.set_root(globals().get('ROOT', r'C:\Users\black\OneDrive\Desktop\Arkticheskiy'))
     result = {}
     for kind in globals().get('WANT') or ['walrus', 'penguin']:
         sc = C.fresh_scene('ASSET_' + kind)

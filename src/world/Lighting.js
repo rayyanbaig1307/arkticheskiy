@@ -79,7 +79,8 @@ export class Lighting {
   update(camera, params) {
     if (params) {
       this.csm.lightDirection.copy(params.keyDir).negate().normalize();
-      const k = params.keyIntensity * Math.min(1, Math.max(0, params.keyDir.y * 6 + 0.15));
+      // (under: 0 outdoors .. 1 underground, where the sky's light doesn't reach)
+      const k = params.keyIntensity * Math.min(1, Math.max(0, params.keyDir.y * 6 + 0.15)) * (1 - (this.under || 0));
       for (const l of this.csm.lights) { l.intensity = k; l.color.copy(params.keyColor); }
     }
     this.csm.update();

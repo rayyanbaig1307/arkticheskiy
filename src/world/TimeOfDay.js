@@ -32,6 +32,37 @@ export const TIMES = {
     fogColor: C(0.36, 0.33, 0.38), fogGlow: C(0.9, 0.48, 0.24),
     fogDensity: 0.01, fogHaze: 0.00045, exposure: 0.85, env: 1.0, lamps: 0.6, snow: 0.35, seaState: 1.0,
   },
+  // ---- the horror's skies (the chapters pick them: story/Director.js)
+  // chapter 1: the polar night under cloud, no aurora, the moon a smear: the sea black, the ice grey
+  dread: {
+    label: 'Dread',
+    keyDir: dir(300, 14), keyColor: C(0.5, 0.6, 0.82), keyIntensity: 0.55,
+    hemiSky: C(0.025, 0.04, 0.07), hemiGround: C(0.008, 0.012, 0.02), hemiIntensity: 0.9,
+    zenith: C(0.0008, 0.0015, 0.004), horizon: C(0.006, 0.012, 0.022), below: C(0.002, 0.004, 0.008),
+    sun: 0, moon: 0.35, stars: 0.15, aurora: 0, clouds: 0.85, cloudColor: C(0.008, 0.012, 0.02),
+    fogColor: C(0.006, 0.012, 0.02), fogGlow: C(0.02, 0.03, 0.05),
+    fogDensity: 0.03, fogHaze: 0.0009, exposure: 2.4, env: 0.7, lamps: 1, snow: 0.6, seaState: 1.0,
+  },
+  // chapters 2 and 3: the storm over the station, snow driving through the lamps' light
+  blizzard: {
+    label: 'Blizzard',
+    keyDir: dir(330, 10), keyColor: C(0.45, 0.55, 0.75), keyIntensity: 0.32,
+    hemiSky: C(0.03, 0.045, 0.07), hemiGround: C(0.012, 0.016, 0.024), hemiIntensity: 1.0,
+    zenith: C(0.002, 0.003, 0.006), horizon: C(0.01, 0.016, 0.026), below: C(0.004, 0.006, 0.01),
+    sun: 0, moon: 0.1, stars: 0, aurora: 0, clouds: 1, cloudColor: C(0.012, 0.016, 0.024),
+    fogColor: C(0.014, 0.02, 0.03), fogGlow: C(0.03, 0.04, 0.06),
+    fogDensity: 0.07, fogHaze: 0.0018, exposure: 2.6, env: 0.6, lamps: 1, snow: 1, seaState: 1.2,
+  },
+  // chapter 5: the first twilight of the year
+  dawn_red: {
+    label: 'Red dawn',
+    keyDir: dir(170, 2), keyColor: C(0.85, 0.42, 0.32), keyIntensity: 0.9,
+    hemiSky: C(0.12, 0.08, 0.1), hemiGround: C(0.04, 0.03, 0.035), hemiIntensity: 0.9,
+    zenith: C(0.006, 0.004, 0.01), horizon: C(0.18, 0.06, 0.05), below: C(0.02, 0.01, 0.012),
+    sun: 0, moon: 0, stars: 0.3, aurora: 0.6, clouds: 0.3, cloudColor: C(0.08, 0.03, 0.03),
+    fogColor: C(0.05, 0.025, 0.025), fogGlow: C(0.25, 0.08, 0.05),
+    fogDensity: 0.012, fogHaze: 0.0006, exposure: 1.8, env: 0.8, lamps: 0.8, snow: 0.2, seaState: 0.8,
+  },
   overcast: {
     label: 'Overcast day',
     keyDir: dir(160, 28), keyColor: C(0.9, 0.93, 1.0), keyIntensity: 1.1,

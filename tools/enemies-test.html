@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Creature test: Arkticheskiy</title>
+  <style>
+    :root { color-scheme: dark; }
+    html, body { margin: 0; height: 100%; background: #05070a; color: #d8e2ea; font: 13px/1.4 system-ui, sans-serif; overflow: hidden; }
+    canvas { display: block; width: 100vw; height: 100vh; }
+    #panel { position: fixed; top: 10px; left: 10px; width: 300px; padding: 10px 12px; background: rgba(10, 16, 24, 0.82); border: 1px solid #2d3d4c; border-radius: 8px; }
+    #panel h1 { font-size: 15px; margin: 0 0 4px; font-weight: 600; letter-spacing: 0.04em; }
+    #panel p { margin: 0 0 8px; color: #8a9aa8; }
+    .row { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
+    button { background: #1b2733; color: #e6eef4; border: 1px solid #2d3d4c; border-radius: 5px; padding: 4px 8px; font: inherit; cursor: pointer; }
+    button:hover { background: #24364a; }
+    button.on { background: #2e5a7a; border-color: #4f86ad; }
+    #hud, #list, #heard { font-family: ui-monospace, monospace; font-size: 11.5px; white-space: pre; color: #b8c6d2; }
+    #heard { color: #7f97ab; max-height: 160px; overflow: hidden; }
+    #cross { position: fixed; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px; border-radius: 50%; background: rgba(255, 255, 255, 0.6); pointer-events: none; }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <div id="cross"></div>
+  <div id="panel">
+    <h1>АРКТИЧЕСКИЙ · creatures</h1>
+    <p>Click the view to walk: WASD, Shift runs, C crouches, F the flashlight, 1-4 the guns, left click fires, Esc lets go. Things spawn 12 m ahead.</p>
+    <div class="row" id="spawn"></div>
+    <div class="row"><button id="debug">Hit volumes</button><button id="god" class="on">God</button><button id="dark" class="on">Night</button><button id="clear">Clear</button></div>
+    <div id="hud"></div>
+    <div id="list"></div>
+    <div id="heard"></div>
+  </div>
+  <script type="module" src="./enemies-test.js"></script>
+</body>
+</html>

@@ -135,7 +135,7 @@ export class Weather {
     u.uTime.value += dt;
     u.uCam.value.copy(camera.position);
     u.uBoatInv.value.copy(this.boat.root.matrixWorld).invert();
-    u.uDensity.value = params ? params.snow : 1;
+    u.uDensity.value = (params ? params.snow : 1) * (this.under ? 0 : 1);      // (under: in a level's rooms, no snow)
     // wind relative to the snow: the true wind (from the north-west) plus the boat's own way
     this.wind.set(-1.4, 0, 0.8);
     u.uWindV.value.copy(this.wind);

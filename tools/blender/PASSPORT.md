@@ -1,4 +1,4 @@
-# Scene Passport: Arctic Tug assets
+# Scene Passport: Arkticheskiy assets
 
 refs_read: blender-scene, blender-scene-spec, blender-modeling, blender-lookdev, blender-animation,
 blender-audit-finalize, blender-volatile

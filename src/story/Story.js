@@ -134,9 +134,11 @@ export class Story {
       if (this.chief) this.updateChief(dt);
       if (this.story && this.state === 'moored') this.objective('Go ashore', 'Cross the gangway (starboard side, on the aft deck just behind the deckhouse) and report to the station chief at the main house.');
       // fell in? back aboard
-      if (this.player.pos.y < -1.2) { this.player.spawn(this.model.spots.spawn); this.ui.toast('Out of the water and back aboard. Mind the edge.'); }
+      // (below the waterline but in one of her rooms is the engine room, not the sea)
+      if (this.player.pos.y < -1.2 && !this.player.zone) { this.player.spawn(this.model.spots.spawn); this.ui.toast('Out of the water and back aboard. Mind the edge.'); }
       // at the wheel, an engine order ahead casts her off
-      if (b.moored && atWheel && b.order > 0) this.castOff();
+      // (the horror's chapters say when she may leave: Director sets holdMoored)
+      if (b.moored && atWheel && b.order > 0 && !this.holdMoored) this.castOff();
     }
     this.marker();
   }
@@ -162,7 +164,7 @@ export class Story {
     this.extra = this.model.collision.addExtra(st.collisionIn(_m));
     this.makeChief();
     if (this.story) this.say('moored');
-    this.ui.toast('Moored at Station Severny. The gangway is down: starboard side, just aft of the deckhouse.', 5);
+    if (this.story) this.ui.toast('Moored at Station Severny. The gangway is down: starboard side, just aft of the deckhouse.', 5);
     this.go('moored');
   }
 
@@ -219,7 +221,7 @@ export class Story {
 
   // ---- the station chief, at his door
   async makeChief() {
-    if (this.chief || !this.peopleData) return;
+    if (this.chief || !this.peopleData || !this.story) return;      // (the horror has no one waiting at the door)
     const spot = this.station.nodes.SPOT_chief;
     if (!spot) return;
     let g;

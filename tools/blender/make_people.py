@@ -273,7 +273,8 @@ def build(name, P):
             if wsum(v, HANDS) > 0.01 or p.z > neck.z - 0.02 or p.z < hem + 0.06: continue
             if dominant(v) in ('lowerarm_l', 'lowerarm_r') and wsum(v, HANDS) > 0: continue
             hidden.add(v.index)
-        bmesh.ops.delete(bm, geom=[f for f in bm.faces if all(v.index in hidden for v in f.verts)], context='FACES')
+        if not P.get('keep_body'):          # (the Turned keep it: their coats are torn open)
+            bmesh.ops.delete(bm, geom=[f for f in bm.faces if all(v.index in hidden for v in f.verts)], context='FACES')
         bm.to_mesh(body.data); bm.free()
         # the coat below the waist: a skirt from the hem, to the upper thigh (jackets), above the
         # knee (the soldiers' parka) or to the knee (the officer's greatcoat), weighted to hips and thighs
@@ -438,7 +439,7 @@ def build(name, P):
         added.append(o)
 
     if P.get('coat'): coat(P['coat'])
-    if P.get('coat') or P['role'] == 'soldier': gloves((0.02, 0.02, 0.022) if P['coat'] != 'orange' else (0.1, 0.08, 0.05))
+    if (P.get('coat') or P['role'] == 'soldier') and P.get('gloves', True): gloves((0.02, 0.02, 0.022) if P['coat'] != 'orange' else (0.1, 0.08, 0.05))
     hat = P.get('hat')
     if hat and hat.startswith('ushanka'): ushanka(hat)
     elif hat == 'knit_black': knit_cap((0.03, 0.03, 0.035))
@@ -451,6 +452,10 @@ def build(name, P):
     tb = C.tris(body)
     if tb > 11000:
         dm = body.modifiers.new('dec', 'DECIMATE'); dm.ratio = 11000 / tb; dm.use_collapse_triangulate = True
+        if P.get('keep_body') and body.vertex_groups.get('head'):
+            # (the whole body kept under a torn coat: the face must not pay for it. Decimate keeps
+            # the weighted vertices when its group is inverted)
+            dm.vertex_group = 'head'; dm.invert_vertex_group = True; dm.vertex_group_factor = 1.0
         C.apply_one(body, 'dec')
 
     # ---- the face: 'talk' (a little jaw drop) for lip flap
@@ -542,7 +547,7 @@ def preview(sc, arm, name):
     return out
 
 if __name__ == '__main__' or True:
-    ROOT_ = globals().get('ROOT', r'C:\Users\black\OneDrive\Desktop\Arctic Tug')
+    ROOT_ = globals().get('ROOT', r'C:\Users\black\OneDrive\Desktop\Arkticheskiy')
     C.set_root(ROOT_)
     want = globals().get('WANT') or list(PEOPLE)
     result = {}

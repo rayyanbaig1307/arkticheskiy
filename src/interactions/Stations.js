@@ -339,7 +339,19 @@ export class Stations {
     }
     // the searchlight: aimed by you, or sweeping slowly on its own
     if (this.sl.yaw) {
-      if (this.at !== 'searchlight') {
+      if (this.at !== 'searchlight' && this.slAim) {
+        // (the story points it: the lamp swings onto a world point, the way a man at it would)
+        const par = this.sl.yaw.parent;
+        par.updateMatrixWorld();
+        const l = par.worldToLocal(_v.copy(this.slAim));
+        const y0 = this.sl.yaw.position;
+        const ty = Math.atan2(-(l.x - y0.x), -(l.z - y0.z));
+        const tp = Math.atan2(l.y - y0.y, Math.hypot(l.x - y0.x, l.z - y0.z));
+        let dy = ty - this.slYaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+        this.slYaw = damp(this.slYaw, this.slYaw + dy, this.slAimRate || 2.2, dt);
+        this.slPitch = damp(this.slPitch, clamp(tp, -0.45, 0.35), this.slAimRate || 2.2, dt);
+        this.sweepT = 0;
+      } else if (this.at !== 'searchlight') {
         this.sweepT = (this.sweepT || 0) + dt;
         this.slYaw = damp(this.slYaw, Math.sin(this.sweepT * 0.11) * 1.1, 0.5, dt);
         this.slPitch = damp(this.slPitch, -0.06 + Math.sin(this.sweepT * 0.07) * 0.03, 0.5, dt);
@@ -348,7 +360,10 @@ export class Stations {
       this.sl.pitch.rotation.x = this.slPitch;
       const night = this.ctx.night?.() ?? 1;
       const on = this.slOn ? 1 : 0;
-      if (this.sl.light) this.sl.light.intensity = 1.6e5 * on * (0.35 + 0.65 * night);
+      // (on something near, the story's aim: dimmed by its distance, so a figure in the beam is a
+      // figure and not a white blot)
+      const near = this.slAim ? clamp((this.sl.lamp.getWorldPosition(_w).distanceTo(this.slAim) / 120) ** 2, 0.03, 1) : 1;
+      if (this.sl.light) this.sl.light.intensity = 1.6e5 * on * near * (0.35 + 0.65 * night);
       if (this.sl.beam) this.sl.beam.material.uniforms.uIntensity.value = 0.16 * on * (0.15 + 0.85 * night);
     }
     void _q;

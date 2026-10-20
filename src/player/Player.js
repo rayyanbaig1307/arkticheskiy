@@ -16,6 +16,7 @@ import { clamp, damp } from '../core/util.js';
 const RADIUS = 0.3, HEIGHT = 1.78, EYE = 1.66;
 const WALK = 1.75, RUN = 3.4, CLIMB = 1.6;
 const GRAVITY = 16;
+const KICK = 16;            // a shot's kick of the view springs back at this rate (rad/s): peaks ~60 ms, gone in ~0.3 s
 const _seg = new THREE.Line3(new THREE.Vector3(), new THREE.Vector3());
 const _v = new THREE.Vector3(), _w = new THREE.Vector3();
 const _q = new THREE.Quaternion(), _qy = new THREE.Quaternion(), _qp = new THREE.Quaternion(), _qs = new THREE.Quaternion();
@@ -38,7 +39,23 @@ export class Player {
     this.eyeLocal = new THREE.Vector3();
     this.shakeT = 0;
     this.lean = 0;
+    this.kick = { p: 0, y: 0, vp: 0, vy: 0 };   // the view's recoil (weapons/): offsets on pitch and yaw
   }
+
+  // weapons: a shot kicks the view up (and aside) and it settles back; `keep` of it stays where it
+  // went, the climb you pull down against with the mouse
+  recoil(pitch, yaw = 0, keep = 0) {
+    this.pitch = clamp(this.pitch + pitch * keep, -1.45, 1.45);
+    this.yaw += yaw * keep;
+    const k = KICK * Math.E;                    // (an impulse whose spring peaks at the given angle)
+    this.kick.vp += pitch * (1 - keep) * k;
+    this.kick.vy += yaw * (1 - keep) * k;
+  }
+
+  // for the weapons' bob and spread
+  get speed() { return Math.hypot(this.vel.x, this.vel.z); }
+  get moving() { return this.onGround && this.speed > 0.4; }
+  get running() { return this.moving && (this.input.key('ShiftLeft') || this.input.key('ShiftRight')); }
 
   spawn(spot) {
     this.pos.copy(spot.pos); this.yaw = spot.yaw ?? 0; this.pitch = 0; this.vel.set(0, 0, 0);
@@ -161,8 +178,14 @@ export class Player {
     // orientation: the boat's heading fully, 75% of her pitch and roll
     _e.set(boat.pitch * 0.75, boat.heading, boat.roll * 0.75, 'YXZ');
     _q.setFromEuler(_e);
-    _qy.setFromAxisAngle(Y, this.yaw);
-    _qp.setFromAxisAngle(X, this.pitch);
+    // the recoil kick: a critically damped spring back to rest (exact for any dt)
+    const k = this.kick, e = Math.exp(-KICK * dt);
+    let a = k.vp + KICK * k.p;
+    k.p = (k.p + a * dt) * e; k.vp = (k.vp - KICK * a * dt) * e;
+    a = k.vy + KICK * k.y;
+    k.y = (k.y + a * dt) * e; k.vy = (k.vy - KICK * a * dt) * e;
+    _qy.setFromAxisAngle(Y, this.yaw + k.y);
+    _qp.setFromAxisAngle(X, clamp(this.pitch + k.p, -1.5, 1.5));
     this.camera.quaternion.copy(_q).multiply(_qy).multiply(_qp);
     // ice impacts: a short shake
     if (boat.shake > 0) {

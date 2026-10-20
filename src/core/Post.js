@@ -1,15 +1,16 @@
 import * as THREE from 'three';
 import {
   EffectComposer, RenderPass, EffectPass, BloomEffect, ToneMappingEffect, ToneMappingMode,
-  SMAAEffect, DepthOfFieldEffect, Effect, BlendFunction,
+  SMAAEffect, DepthOfFieldEffect, Effect, BlendFunction, Pass,
 } from 'postprocessing';
 import { N8AOPostPass } from 'n8ao';
 
 // The frame, from the scene to the screen:
 //
 //   scene -> ambient occlusion (N8AO; Medium and High) -> exposure (and depth of field on High)
-//   -> bloom (the aurora, the lamps, the moon, the searchlight) -> ACES filmic -> the grade (a cold
-//   blue grade, a soft S-curve, vignette, a sub-visible dither) -> SMAA (Medium)
+//   -> the weapon in your hands (its own camera and pass) -> bloom (the aurora, the lamps, the moon,
+//   the searchlight) -> ACES filmic -> the grade (a cold blue grade, a soft S-curve, vignette, a
+//   sub-visible dither) -> SMAA (Medium)
 
 class SanitizeExposure extends Effect {
   constructor() {
@@ -58,6 +59,26 @@ class GradeEffect extends Effect {
   }
 }
 
+// The first-person weapon (weapons/Viewmodel.js): its own camera and layer, drawn over the frame
+// after ambient occlusion and depth of field (neither sees it: the gun is in no depth they read,
+// and the depth is cleared for it so it never sinks into a wall) and before bloom, tone mapping and
+// the grade, like everything else. The scene's lights and this frame's shadow maps and matrices
+// are reused as they are (no second shadow render, no second matrix update, no background).
+class ViewmodelPass extends Pass {
+  constructor(scene, camera) {
+    super('ViewmodelPass', scene, camera);
+    this.needsSwap = false;
+  }
+  render(renderer, inputBuffer) {
+    const scene = this.scene, bg = scene.background, auto = scene.matrixWorldAutoUpdate, shadows = renderer.shadowMap.autoUpdate;
+    scene.background = null; scene.matrixWorldAutoUpdate = false; renderer.shadowMap.autoUpdate = false;
+    renderer.setRenderTarget(this.renderToScreen ? null : inputBuffer);
+    renderer.clearDepth();
+    renderer.render(scene, this.camera);
+    scene.background = bg; scene.matrixWorldAutoUpdate = auto; renderer.shadowMap.autoUpdate = shadows;
+  }
+}
+
 export class Post {
   constructor(renderer, scene, camera, quality) {
     this.camera = camera;
@@ -89,6 +110,16 @@ export class Post {
     this.composer.addPass(new EffectPass(camera, this.bloom, this.tone, this.grade));
     if (quality.smaa) this.composer.addPass(new EffectPass(camera, new SMAAEffect()));
     this.focus = 8;
+  }
+
+  // the weapon's pass, right after the exposure (and depth of field) pass; its materials apply the
+  // exposure themselves (this.exposure's uniforms), since it is drawn after it
+  addViewmodel(scene, camera) {
+    if (this.viewmodel) return this.viewmodel;
+    const i = this.composer.passes.findIndex((p) => p.effects?.includes?.(this.exposure));
+    this.viewmodel = new ViewmodelPass(scene, camera);
+    this.composer.addPass(this.viewmodel, i + 1);
+    return this.viewmodel;
   }
 
   setSize(w, h) { this.composer.setSize(w, h); }

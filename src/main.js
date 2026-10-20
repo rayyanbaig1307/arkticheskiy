@@ -33,6 +33,8 @@ import { Flag } from './boat/Flag.js';
 import { Probes } from './boat/Probes.js';
 import { Station, STATION_POS } from './world/Station.js';
 import { Story } from './story/Story.js';
+import { HorrorGame } from './horror/HorrorGame.js';
+import { Director } from './story/Director.js';
 
 // ПОЛЯРНИК: boot, the loop, and the wiring between systems. window.__game is the debug and test
 // hook (the preview harness drives the game through it).
@@ -64,7 +66,7 @@ async function boot() {
   const waves = new Waves(quality.waves);
   const sky = new Sky({ renderer, quality });
   scene.add(sky.mesh);
-  sky.setTime(settings.timeOfDay, true);
+  sky.setTime('dread', true);                        // (the horror's own skies: the chapters change them)
   const lighting = new Lighting({ scene, camera, quality });
   const ocean = new Ocean({ waves, quality, sky });
   scene.add(ocean.mesh);
@@ -154,7 +156,7 @@ async function boot() {
     wanderT -= 1 / 60;
     if (wanderT <= 0) { wanderT = 25 + Math.random() * 30; wander = (Math.random() - 0.5) * 0.9; }
     let want = b.heading + wander * 0.02;
-    const tgt = story?.pilotTarget();
+    const tgt = director?.pilotTarget() || story?.pilotTarget();
     if (tgt) want = Math.atan2(-(tgt.x - b.x), -(tgt.z - b.z));
     const f = b.forward;
     if (station.ready) {
@@ -179,9 +181,14 @@ async function boot() {
     return b.heading + Math.max(-0.5, Math.min(0.5, angleDiff(b.heading, want)));
   };
 
-  let story = null;
+  let story = null, director = null;
   // post
   const post = new Post(renderer, scene, camera, quality);
+  // the horror: your body, what you carry, the HUD and the journal, the flashlight, the guns, the
+  // levels (made now, before the shaders compile: they add their lights once)
+  const horror = new HorrorGame({ scene, camera, input, ui, audio, player, boat, model, station, lighting, post, interactions, quality, sky, crew, stations, renderer });
+  ui.addOverlay(() => !!document.getElementById('keypad'));      // (a door's or the safe's keypad: no pause menu over it)
+  ctx.horror = horror;
   const perf = new Perf(renderer);
   const resize = () => {
     const w = innerWidth, h = innerHeight;
@@ -198,9 +205,12 @@ async function boot() {
     try {
       await audio.start();
       audio.setVolume(settings.volume); audio.setMusic(settings.music);
-    } catch (e) { console.warn('[Arctic Tug] no sound', e); }
+    } catch (e) { console.warn('[Arkticheskiy] no sound', e); }
   };
   ui.onPlay = play;
+  // the story: a new game from chapter 1, or the last checkpoint
+  ui.onNewGame = async () => { await play(); director.newGame(); };
+  ui.onContinue = async () => { await play(); director.continueGame(); };
   ui.onVolume = (v) => audio.setVolume(v);
   ui.onMusic = (on) => audio.setMusic(on);
   ui.onTime = (k) => sky.setTime(k);
@@ -218,6 +228,7 @@ async function boot() {
   const probes = new Probes({ renderer, scene, boat, model, lights, size: quality.envSize });
   boat.update(0.016); model.update(boat.root);
   probes.capture(player.pos, player.zone);
+  horror.ctx.probes = probes;
   const recapture = () => { probes.capture(player.pos, player.zone); };
 
   // the loop
@@ -240,15 +251,17 @@ async function boot() {
     if (freecam) {        // (test harness: a camera anywhere in boat space)
       camera.position.copy(boat.toWorld(freecam.pos, _fc)); camera.lookAt(boat.toWorld(freecam.look, _fl)); camera.updateMatrixWorld();
     }
+    horror.ctx.freecam = !!freecam;
+    horror.update(dt, { playing });
     interactions.enabled = playing && !stations.at;
     interactions.update();
     ice.update(dt, boat);
     station.collide(boat, (point, strength, big) => { audio.iceHit(point, strength, big); if (big) crew.moment('iceHit'); });
     station.update(dt, boatWorld.set(boat.x, 0, boat.z), sky.params.moon, t);
-    if (playing) story.update(dt);
-    crew.update(dt, player);
+    if (playing) { story.update(dt); director?.update(dt); }
+    if (!crew.disabled) crew.update(dt, player);
     animals.update(dt, boat, camera);
-    weather.update(dt, { camera, params: sky.params, crew, animals, player, indoor: !!player.zone });
+    weather.update(dt, { camera, params: sky.params, crew, animals, player, indoor: horror.indoor });
     radar.update(dt);
     towline.update(dt);
     flag.update(dt, 0.55 + 0.25 * sky.params.clouds, boat.speed);
@@ -268,12 +281,16 @@ async function boot() {
     if (erOn !== erShown) { erShown = erOn; for (const m of model.roomMeshes.engine) m.visible = erOn; }
     station.root.visible = Math.hypot(STATION_POS.x - boat.x, STATION_POS.z - boat.z) < 1900;
     probes.update(player.zone);
-    atmos.uIndoor.value += ((player.zone && player.zone !== 'engine_stair' ? 1 : 0) - atmos.uIndoor.value) * Math.min(1, dt * 3);
+    atmos.uIndoor.value += (((player.zone && player.zone !== 'engine_stair') || horror.zone ? 1 : 0) - atmos.uIndoor.value) * Math.min(1, dt * 3);
     sky.update(dt, camera);
+    // underground (Object 7) and in the station's rooms: no sky light, no snow, hardly any fog
+    const under = horror.zone ? 1 : 0;
+    lighting.under = under; weather.under = under;
+    if (under) { atmos.uFogDensity.value *= 0.06; atmos.uFogHaze.value *= 0.1; }
     sky.updateEnv(scene, dt);
     ocean.update(camera, boat.root, sky.params);
     lighting.update(camera, sky.params);
-    post.setExposure(sky.params.exposure);
+    post.setExposure(sky.params.exposure * (horror.adapt ?? 1));
     post.setFocus(interactions.lookDist, dt);
     ui.update(dt);
     renderer.info.reset();
@@ -299,11 +316,15 @@ async function boot() {
 
   // the story (or the free voyage): its objectives, the berth, going ashore
   const towMat = towline.material;
-  story = new Story({ ui, boat, stations, station, crew, audio, player, model, scene, interactions, towline, lighting, peopleData, towMat, settings });
+  // (the old run to the station is the tug's mechanics now: the berth, the lines, the mooring)
+  story = new Story({ ui, boat, stations, station, crew, audio, player, model, scene, interactions, towline, lighting, peopleData, towMat, settings: { ...settings, mode: 'voyage' } });
+  director = new Director({ horror, boat, station, crew, stations, ui, audio, player, model, sky, voyage: story, interactions, scene, lights, radar, lighting, peopleData, ice, camera });
+  // the levels come in behind the title screen
+  horror.loadLevels((name) => console.log('[Arkticheskiy] level ready:', name));
 
   ui.ready();
   window.__game = {
-    station, get story() { return story; }, STATION_POS,
+    station, get story() { return story; }, get director() { return director; }, STATION_POS, horror,
     THREE, perf, audio, towline, flag, crew, get probes() { return probes; }, animals, weather, foam, radar, scene, camera, renderer, boat, model, player, ice, sky, ocean, waves, stations, lights, post, ui, input, settings, quality, reflection, lighting,
     // (the hidden preview pane never fires rAF: drive the loop with a timer instead)
     kick(ms = 33) { raf = false; clearInterval(this._iv); this._iv = setInterval(frame, ms); },

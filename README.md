@@ -1,4 +1,4 @@
-# ПОЛЯРНИК: Arctic Tug
+# АРКТИЧЕСКИЙ (Arkticheskiy)
 
 A first-person walk around a Russian icebreaking tug, the *Polyarnik*, as she pushes through an
 endless Arctic ice field under the northern lights. Walk her decks while she rolls and turns, take
@@ -99,8 +99,14 @@ src/player/           first-person controller in boat space
 src/characters/       the crew and soldiers: loading, clips, routines, lines, routing (Nav.js)
 src/animals/          walruses and penguins on the floes
 src/interactions/     looking at things and E; every station aboard
-src/story/            the run to Station Severny: beats, objectives, the berth, going ashore
-src/audio/            the synthesised sound and music
+src/story/            the five chapters (ch1.js..ch5.js) and their Director, the script and
+                      the documents; Story.js still sails her (the berth, casting off)
+src/horror/           HorrorGame (the systems together), the flashlight
+src/levels/           a level from its Blender node names: rooms, doors, lamps, lockers, uses
+src/enemies/          the bears, the Turned, the Shades, Gromov
+src/weapons/          the guns in your hands, firing, reloading, flares
+src/survival/         health, warmth, fear, the battery; the pockets; saves
+src/audio/            the synthesised sound and music (Horror.js: the horror's sounds)
 tools/blender/        the Blender scripts that build every model (see below)
 tools/pack.mjs        compresses Blender's exports into public/models/ (gltfpack, meshopt)
 public/models/        the compressed GLB models
@@ -118,8 +124,11 @@ import runpy
 r = runpy.run_path(r'<project>\tools\blender\run.py', init_globals={'SCRIPT': 'make_tug', 'ARGS': {'EXPORT': True}})
 ```
 
-(`make_tug`, `make_station`, `make_icebergs`, `make_animals`, `make_people` (needs the MPFB
-add-on), `make_anims`.) The tug is split over several files: `make_tug.py` (the hull, decks,
+(`make_tug`, `make_station2` (the station, its rooms and the island; it reuses parts of
+`make_station`), `make_bunker` (Object 7 and the cave), `make_bear`, `make_turned` (the Turned,
+on the people's rig), `make_weapons` (the guns and the gloved hands), `make_icebergs`,
+`make_animals`, `make_people` (needs the MPFB add-on), `make_anims`.) `preview_level.py` renders
+a level with its own lamps lit, for checking a room without the game. The tug is split over several files: `make_tug.py` (the hull, decks,
 superstructure, doors, the things you use), `tug_rooms.py` (mess, galley, hall, lobby),
 `tug_bridge.py`, `tug_engine.py`, `tug_outfit.py` (deck gear, the towing winch), `tug_mats.py`
 and `texlib.py` (the generated PBR textures), `kit.py` (the shapes they are made of) and

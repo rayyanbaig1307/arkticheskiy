@@ -138,13 +138,15 @@ if (before.used + est > before.limit) { console.error(`Not enough credits: ${bef
 const ids = {};
 if (todo.length) {
   const have = new Set((await accountVoices(key)).map((v) => v.voice_id));
-  for (const who of [...new Set(todo.map((j) => j.who))]) {
+  // (the ones with a Library owner first: a part that borrows another's voice comes after it)
+  for (const who of [...new Set(todo.map((j) => j.who))].sort((a, b) => !!M.voices[b].owner - !!M.voices[a].owner)) {
     const v = M.voices[who];
     ids[who] = v.id;
     if (have.has(v.id)) continue;
     if (!v.owner) throw new Error(`${v.name} (${v.id}) is not in the account and has no Voice Library owner to add it from`);
-    const r = await call(`/voices/add/${v.owner}/${v.id}`, key, { method: 'POST', body: { new_name: `${v.name} (Arctic Tug: ${name(who)})` } });
+    const r = await call(`/voices/add/${v.owner}/${v.id}`, key, { method: 'POST', body: { new_name: `${v.name} (Arkticheskiy: ${name(who)})` } });
     ids[who] = r.voice_id || v.id;
+    have.add(v.id); have.add(ids[who]);           // (another part may share this voice: it's in the account now)
     console.log(`  added ${v.name} to the account's voices${ids[who] !== v.id ? ` as ${ids[who]} (put that id in manifest.json)` : ''}`);
   }
 }

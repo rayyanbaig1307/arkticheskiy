@@ -16,5 +16,5 @@ export function loadGLB(path, onProgress) {
 }
 
 export async function tryGLB(path) {
-  try { return await loadGLB(path); } catch (e) { console.warn('[Arctic Tug] missing model', path, e?.message || e); return null; }
+  try { return await loadGLB(path); } catch (e) { console.warn('[Arkticheskiy] missing model', path, e?.message || e); return null; }
 }

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Horror sound test: Arkticheskiy</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; padding: 16px 20px 48px; background: #0e1014; color: #dde3ea; font: 14px/1.45 system-ui, sans-serif; }
+    h1 { font-size: 20px; margin: 0 0 4px; letter-spacing: 0.04em; font-weight: 600; }
+    h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; color: #c9a3a3; margin: 22px 0 8px; font-weight: 600; }
+    p.note { color: #8f99a5; margin: 0 0 14px; max-width: 80ch; }
+    .row { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
+    button { background: #1d2229; color: #e8edf2; border: 1px solid #333c47; border-radius: 6px; padding: 6px 11px; font: inherit; cursor: pointer; }
+    button:hover { background: #2a313b; }
+    button.on { background: #6b2a2a; border-color: #a34848; }
+    button.big { font-size: 16px; padding: 10px 22px; background: #6b2a2a; border-color: #a34848; }
+    label { display: inline-flex; gap: 6px; align-items: center; margin-right: 12px; color: #bcc5cf; }
+    label output { min-width: 3.2em; color: #e8edf2; font-variant-numeric: tabular-nums; }
+    input[type=range] { width: 130px; }
+    select { background: #1d2229; color: #e8edf2; border: 1px solid #333c47; border-radius: 6px; padding: 4px 6px; font: inherit; }
+    #status { color: #c9a3a3; font-family: ui-monospace, monospace; font-size: 12px; margin-left: 12px; }
+  </style>
+</head>
+<body>
+  <h1>АРКТИЧЕСКИЙ · horror sound test</h1>
+  <p class="note">Every sound here is synthesised in code by <code>src/audio/Horror.js</code> (reached in the game as
+    <code>audio.horror</code>); nothing is a recording. Press Start, then click through. Headphones help: you stand at
+    the origin facing forward (−Z) and positional sounds play where the Position list says. The place sets the bed and
+    the reverb (outdoors: the long echo off the ice; inside: a hard room, the bunker's concrete, the cave).</p>
+  <div class="row"><button id="start" class="big">Start audio</button><span id="status">not started</span></div>
+  <div id="ui"></div>
+  <script type="module" src="./horror-audio-test.js"></script>
+</body>
+</html>

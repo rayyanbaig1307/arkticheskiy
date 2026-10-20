@@ -27,6 +27,9 @@ export class Nav {
     this.tests = 0;
   }
 
+  // forget what was found (the ground changed: the station's collision came or went)
+  reset() { this.cells.clear(); this.routes.clear(); }
+
   key(ix, iz, y) { return ix + ',' + iz + ',' + Math.round(y * 2); }
 
   // the floor near height y at a cell, and whether a body fits standing on it

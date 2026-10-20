@@ -139,8 +139,10 @@ export class Crew {
       if (c && c.root.getWorldPosition(_v).distanceTo(this.camera.position) < 14) p = c;
     }
     if (p && this.people.includes(p)) this.hold(p, clamp(en.length * 0.065 + 1.2, 2.5, 9));
-    if (who === 'radio') this.audio?.sfx?.('crackle', null);
-    this.utter(who, ru, en, voice, { p, radio: who === 'radio', onStart: o.onStart });
+    // (o.radio: heard over the radio; who stays the speaker, whose recording it is)
+    const radio = o.radio ?? who === 'radio';
+    if (radio) this.audio?.sfx?.('crackle', null);
+    this.utter(who, ru, en, voice, { p, radio, onStart: o.onStart });
   }
 
   // stop what they're doing and turn to you for a while (the line sets how long once it starts)
