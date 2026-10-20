@@ -34,6 +34,7 @@ const DEFAULTS = {
   timeOfDay: 'night',
   volume: 0.8,
   music: true,
+  voiceLang: 'ru',          // the voices: 'ru' (Russian, English subtitles) or 'en'
   sensitivity: 1,
   fov: 70,
   showFps: false,

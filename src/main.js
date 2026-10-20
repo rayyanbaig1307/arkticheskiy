@@ -213,6 +213,8 @@ async function boot() {
   ui.onContinue = async () => { await play(); director.continueGame(); };
   ui.onVolume = (v) => audio.setVolume(v);
   ui.onMusic = (on) => audio.setMusic(on);
+  ui.onVoiceLang = (lang) => crew.setLang(lang);
+  crew.setLang(settings.voiceLang);
   ui.onTime = (k) => sky.setTime(k);
   input.onLockChange = (locked) => { playing = locked; ui.setPlaying(locked); };
   addEventListener('keydown', (e) => { if (e.code === 'F3') { e.preventDefault(); ui.toggleFps(); } });

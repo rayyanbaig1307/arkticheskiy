@@ -2,7 +2,11 @@
 //
 //   node tools/elevenlabs/generate.mjs              record every line that has no recording yet (or changed)
 //   node tools/elevenlabs/generate.mjs --dry        list what would be recorded, the characters and the credits (free)
-//   node tools/elevenlabs/generate.mjs --only a,b   only these ids (captain_0, bosun_iceHit, story_radio) or speakers (cook)
+//   node tools/elevenlabs/generate.mjs --only a,b   only these ids (captain_0, bosun_iceHit, story_radio), speakers (cook)
+//                                                   or id prefixes (story_c1_*)
+//   node tools/elevenlabs/generate.mjs --skip a,b   leave these out (the same forms as --only)
+//   node tools/elevenlabs/generate.mjs --lang en    the English lines (each line's English, by the same voices),
+//                                                   into public/audio/vo_en/ (the game's Voices: English)
 //   node tools/elevenlabs/generate.mjs --force      record again even when the recording is up to date
 //   node tools/elevenlabs/generate.mjs --voices     list the account's voices (free)
 //   node tools/elevenlabs/generate.mjs --credits    this month's credits used and left (free)
@@ -31,12 +35,16 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..', '..');
-const OUT = join(ROOT, 'public', 'audio', 'vo');
+const LANG = (() => { const i = process.argv.indexOf('--lang'); return i >= 0 ? process.argv[i + 1] : 'ru'; })();
+const OUT = join(ROOT, 'public', 'audio', LANG === 'en' ? 'vo_en' : 'vo');
 const API = 'https://api.elevenlabs.io/v1';
 
 const args = process.argv.slice(2);
 const flag = (f) => args.includes(f);
-const only = (() => { const i = args.indexOf('--only'); return i >= 0 ? new Set(args[i + 1].split(',')) : null; })();
+const list = (f) => { const i = args.indexOf(f); return i >= 0 ? args[i + 1].split(',') : null; };
+const only = list('--only'), skip = list('--skip');
+// an id, a speaker, or an id prefix ending in *
+const hit = (pats, j) => pats.some((o) => (o.endsWith('*') ? j.id.startsWith(o.slice(0, -1)) : o === j.id || o === j.who));
 const DRY = flag('--dry'), FORCE = flag('--force');
 
 const M = JSON.parse(readFileSync(join(HERE, 'manifest.json'), 'utf8'));
@@ -94,16 +102,18 @@ const rate = M.creditsPerChar ?? 1;
 const jobs = lines.map((l) => {
   const v = M.voices[l.who];
   if (!v) throw new Error(`No voice cast for ${l.who}`);
-  const want = { who: l.who, ru: l.ru, voice: v.id, model: v.model || M.model };
-  const same = (m) => m && m.who === want.who && m.ru === want.ru && m.voice === want.voice && m.model === want.model;
+  // (the English recording keeps the Russian it stands for: the game finds a line by it)
+  const text = LANG === 'en' ? l.en : l.ru;
+  const want = { who: l.who, ru: l.ru, ...(LANG === 'en' ? { en: l.en, lang: 'en' } : {}), voice: v.id, model: v.model || M.model };
+  const same = (m) => m && m.who === want.who && m.ru === want.ru && (LANG !== 'en' || m.en === want.en) && m.voice === want.voice && m.model === want.model;
   const file = join(OUT, `${l.id}.mp3`);
   const fresh = same(made[l.id]) && existsSync(file);
   // the same recording under another id (the line moved in the list): copy it
   const twin = !fresh && Object.entries(made).find(([id, m]) => id !== l.id && same(m) && existsSync(join(OUT, `${id}.mp3`)));
-  return { ...l, v, want, file, fresh, twin: twin ? twin[0] : null, stale: !!made[l.id] && !fresh, chars: l.ru.length, cost: Math.ceil(l.ru.length * rate) };
+  return { ...l, v, want, file, fresh, twin: twin ? twin[0] : null, stale: !!made[l.id] && !fresh, text, chars: text.length, cost: Math.ceil(text.length * rate) };
 });
 
-const picked = jobs.filter((j) => !only || only.has(j.id) || only.has(j.who));
+const picked = jobs.filter((j) => (!only || hit(only, j)) && (!skip || !hit(skip, j)));
 const copies = picked.filter((j) => !FORCE && !j.fresh && j.twin);
 const todo = picked.filter((j) => FORCE || (!j.fresh && !j.twin));
 const est = todo.reduce((a, j) => a + j.cost, 0);
@@ -112,7 +122,7 @@ const name = (who) => (CAST[who] || STORY_CAST[who] || { name: who }).name;
 
 console.log(`${todo.length} line(s) to record: ${chars} characters, estimated ${est} credits (${M.model}).${copies.length ? ` ${copies.length} moved line(s) copied for free.` : ''}`);
 if (DRY) {
-  for (const j of todo) console.log(`  ${String(j.cost).padStart(4)}  ${(j.id + '.mp3').padEnd(24)} ${j.ru}${j.stale ? '   (changed since recorded)' : ''}`);
+  for (const j of todo) console.log(`  ${String(j.cost).padStart(4)}  ${(j.id + '.mp3').padEnd(24)} ${j.text}${j.stale ? '   (changed since recorded)' : ''}`);
   const by = {};
   for (const j of todo) { const b = (by[j.who] ||= { n: 0, chars: 0, cost: 0 }); b.n++; b.chars += j.chars; b.cost += j.cost; }
   console.log('');
@@ -162,11 +172,11 @@ await Promise.all(Array.from({ length: 3 }, async () => {
     try {
       const buf = await call(`/text-to-speech/${ids[j.who]}?output_format=${M.format}`, key, {
         method: 'POST', audio: true,
-        body: { text: j.ru, model_id: j.want.model, voice_settings: { ...M.settings, ...j.v.settings } },
+        body: { text: j.text, model_id: j.want.model, voice_settings: { ...M.settings, ...j.v.settings } },
       });
       writeFileSync(j.file, buf);
       made[j.id] = { file: `${j.id}.mp3`, ...j.want };
-      console.log(`  ok    ${j.id}.mp3  (${(buf.length / 1024).toFixed(0)} KB)  ${j.ru}`);
+      console.log(`  ok    ${j.id}.mp3  (${(buf.length / 1024).toFixed(0)} KB)  ${j.text}`);
       done++;
     } catch (e) { console.log(`  FAIL  ${j.id}.mp3  ${e.message}`); failed++; }
   }
@@ -176,7 +186,7 @@ await Promise.all(Array.from({ length: 3 }, async () => {
 const index = {};
 for (const j of jobs) {
   const m = made[j.id];
-  if (m && existsSync(j.file) && m.ru === j.ru && m.who === j.who) index[j.id] = m;
+  if (m && existsSync(j.file) && m.ru === j.ru && m.who === j.who && (LANG !== 'en' || m.en === j.en)) index[j.id] = m;
 }
 writeFileSync(INDEX, JSON.stringify(index, null, 1));
 

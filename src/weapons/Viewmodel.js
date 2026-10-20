@@ -36,6 +36,9 @@ const Z = new THREE.Vector3(0, 0, 1), YUP = new THREE.Vector3(0, 1, 0), XAX = ne
 const _v1 = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3(), _v4 = new THREE.Vector3(), _v5 = new THREE.Vector3();
 const _q1 = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _q3 = new THREE.Quaternion();
 const _m1 = new THREE.Matrix4(), _m2 = new THREE.Matrix4(), _m3 = new THREE.Matrix4();
+const _v6 = new THREE.Vector3(), _v7 = new THREE.Vector3(), _q4 = new THREE.Quaternion(), _qI = new THREE.Quaternion();
+// the arms' fist: the hole the grip goes through (its semi-axes, the hand's y and z), the wrist's pivot
+const HOLE = [0.0150, 0.0186], WRIST = [0, 0.012, 0.074], BEND = 1.0;
 const _e = new THREE.Euler(0, 0, 0, 'YXZ'), _one = new THREE.Vector3(1, 1, 1), _sc = new THREE.Vector3();
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const damp = (a, b, r, dt) => a + (b - a) * (1 - Math.exp(-r * dt));
@@ -99,6 +102,77 @@ function centreIn(part, frame) {
   frame.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(part);
   return box.getCenter(new THREE.Vector3()).applyMatrix4(new THREE.Matrix4().copy(frame.matrixWorld).invert());
+}
+
+// ---- how a hand holds a gun (defs hands: { at, axis, back, mat }): a frame with x along the grip
+// (the index finger's end at -x on the right hand, +x on the left), y out of the back of the hand,
+// z up the forearm; its origin moved onto the middle of what the fist closes round there (the gun's
+// own mesh, cut in a slab the hand's width), and the semi-axes the fist's hole must open to
+function fitGrip(gun, spec) {
+  const x = new THREE.Vector3(...spec.axis).normalize();
+  const y = new THREE.Vector3(...spec.back); y.addScaledVector(x, -y.dot(x)).normalize();
+  const z = new THREE.Vector3().crossVectors(x, y);
+  const at = new THREE.Vector3(...spec.at);
+  const M = new THREE.Matrix4().makeBasis(x, y, z).setPosition(at), inv = M.clone().invert();
+  gun.root.updateMatrixWorld(true);
+  inv.multiply(new THREE.Matrix4().copy(gun.root.matrixWorld).invert());          // (the gun may already sit in the view)
+  let y0 = Infinity, y1 = -Infinity, z0 = Infinity, z1 = -Infinity, n = 0;
+  const v = new THREE.Vector3(), mw = new THREE.Matrix4(), half = spec.half ?? 0.03, R2 = 0.06 * 0.06;
+  // (the surface cut by the slab: corners inside it, and where edges cross its two faces, so a long
+  // plank with no vertices under the hand still counts)
+  const take = (q) => {
+    if (q.y * q.y + q.z * q.z > R2) return;
+    if (spec.front != null && q.z < -spec.front) return;             // (not the trigger guard ahead of the grip)
+    if (spec.top != null && q.y < -spec.top) return;                 // (not the upper handguard: the hand holds the lower)
+    if (q.y < y0) y0 = q.y; if (q.y > y1) y1 = q.y; if (q.z < z0) z0 = q.z; if (q.z > z1) z1 = q.z; n++;
+  };
+  const T3 = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()], e = new THREE.Vector3();
+  gun.root.traverse((o) => {
+    if (!o.isMesh || !o.material?.name || (gun.flash && under(o, gun.flash))) return;
+    if (spec.mat && !spec.mat.test(o.material.name)) return;
+    mw.multiplyMatrices(inv, o.matrixWorld);
+    const p = o.geometry.attributes.position, idx = o.geometry.index;
+    const tris = idx ? idx.count / 3 : p.count / 3;
+    for (let t = 0; t < tris; t++) {
+      for (let k = 0; k < 3; k++) T3[k].fromBufferAttribute(p, idx ? idx.getX(t * 3 + k) : t * 3 + k).applyMatrix4(mw);
+      for (let k = 0; k < 3; k++) {
+        const a = T3[k], b = T3[(k + 1) % 3];
+        if (Math.abs(a.x) <= half) take(a);
+        for (const px of [-half, half]) {
+          if ((a.x - px) * (b.x - px) < 0) take(e.copy(a).lerp(b, (px - a.x) / (b.x - a.x)));
+        }
+      }
+    }
+  });
+  void v;
+  if (!n) return null;
+  // (an ellipse round a rounded box: a little wider than half its sides; the glove gives a little)
+  const k = spec.k ?? 1.1, pad = 0.0012;
+  const hy = ((y1 - y0) / 2) * k + pad, hz = ((z1 - z0) / 2) * k + pad;
+  const node = new THREE.Object3D();
+  node.name = 'HFIT';
+  node.position.copy(at).addScaledVector(y, (y0 + y1) / 2).addScaledVector(z, (z0 + z1) / 2);
+  node.quaternion.setFromRotationMatrix(M);
+  gun.root.add(node);
+  node.updateMatrixWorld(true);
+  return { node, hy, hz };
+}
+
+// a fist's geometry opened (or closed) round another grip: every point pushed out from the hole's
+// axis by how much wider the new hole is in its direction, so the fingers keep their thickness
+function warpFist(geo, hy, hz) {
+  const g = geo.clone(), a = g.attributes.position.array;
+  const [y0, z0] = HOLE;
+  for (let i = 0; i < a.length; i += 3) {
+    const y = a[i + 1], z = a[i + 2], r = Math.hypot(y, z);
+    if (r < 1e-6) continue;
+    const th = Math.atan2(z / z0, y / y0), c = Math.cos(th), s = Math.sin(th);
+    const k = (Math.hypot(hy * c, hz * s) - Math.hypot(y0 * c, z0 * s)) / r;
+    a[i + 1] = y + y * k; a[i + 2] = z + z * k;
+  }
+  g.attributes.position.needsUpdate = true;
+  g.computeBoundingSphere();
+  return g;
 }
 
 // ---- one gun: its parts, their rest poses, the anchors the hands use, where its props go
@@ -231,6 +305,90 @@ class Arm {
     this.handInv = hand ? new THREE.Matrix4().copy(hand.matrixWorld).invert() : new THREE.Matrix4();
     root.traverse((o) => { o.layers.set(VIEW_LAYER); if (o.isMesh) { o.castShadow = false; o.receiveShadow = true; } });
     this.p = new THREE.Vector3(); this.q = new THREE.Quaternion();     // the hand, this frame (rig space)
+    this.fits = {};                    // gun id -> [geometry per mesh]: the fist opened to that gun's grip
+    this.cur = null;
+    this.skin();
+  }
+
+  // a bone at the wrist: the glove's cuff and the sleeve turn toward the elbow while the fist keeps
+  // the grip (weights from the hand to the forearm across the wrist)
+  skin() {
+    const meshes = [];
+    this.root.traverse((o) => { if (o.isMesh && !o.isSkinnedMesh) meshes.push(o); });
+    this.meshes = [];
+    if (!meshes.length) return;
+    const hand = new THREE.Bone(), wrist = new THREE.Bone();
+    hand.name = 'B_hand'; wrist.name = 'B_wrist';
+    wrist.position.set(WRIST[0], WRIST[1], WRIST[2]);
+    hand.add(wrist);
+    this.root.add(hand);
+    this.root.updateMatrixWorld(true);
+    const skel = new THREE.Skeleton([hand, wrist]);
+    for (const m of meshes) {
+      const g = m.geometry;
+      Arm.weights(g, _m1.copy(this.root.matrixWorld).invert().multiply(m.matrixWorld));
+      const s = new THREE.SkinnedMesh(g, m.material);
+      s.name = m.name; s.position.copy(m.position); s.quaternion.copy(m.quaternion); s.scale.copy(m.scale);
+      s.layers.mask = m.layers.mask; s.castShadow = false; s.receiveShadow = true; s.frustumCulled = false;
+      m.parent.add(s); m.removeFromParent();
+      s.updateMatrixWorld(true);
+      s.bind(skel, s.matrixWorld);
+      this.meshes.push({ mesh: s, base: g });
+    }
+    this.wrist = wrist;
+  }
+
+  // the hand's weights between the fist and the forearm, by how far up the wrist each point is
+  static weights(g, M) {
+    const n = g.attributes.position.count;
+    const si = new Uint16Array(n * 4), sw = new Float32Array(n * 4), v = new THREE.Vector3();
+    for (let i = 0; i < n; i++) {
+      v.fromBufferAttribute(g.attributes.position, i).applyMatrix4(M);
+      const w = smooth(clamp((v.z - (WRIST[2] - 0.022)) / 0.044, 0, 1));
+      si[i * 4 + 1] = 1; sw[i * 4] = 1 - w; sw[i * 4 + 1] = w;
+    }
+    g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(si, 4));
+    g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(sw, 4));
+  }
+
+  // another shape of the same hand (arms.glb: ARM_L_open, the support hand open on a handguard):
+  // its glove and its sleeve, matched to this arm's meshes by material
+  addVariant(name, root) {
+    root.updateMatrixWorld(true);
+    const inv = new THREE.Matrix4().copy(root.matrixWorld).invert();
+    const by = {};
+    root.traverse((o) => { if (o.isMesh) by[o.material?.name] = o; });
+    this.variants = this.variants || {};
+    this.variants[name] = this.meshes.map((m) => {
+      const o = by[m.mesh.material?.name];
+      if (!o) return null;
+      const g = o.geometry.clone();
+      g.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, o.matrixWorld));
+      Arm.weights(g, new THREE.Matrix4());
+      return g;
+    });
+  }
+
+  // the fist for a gun (its grip's semi-axes, and which shape of hand), made once
+  fit(id, hy, hz, variant = null) {
+    const vs = variant ? this.variants?.[variant] : null;
+    this.fits[id] = this.meshes.map((m, i) => warpFist(vs?.[i] || m.base, hy, hz));
+  }
+  use(id) {
+    if (this.cur === id) return;
+    this.cur = id;
+    const f = this.fits[id];
+    this.meshes.forEach((m, i) => { m.mesh.geometry = f ? f[i] : m.base; });
+  }
+  // the wrist turned so the forearm runs at the elbow (rig space), as far as a wrist goes
+  bend(elbow) {
+    if (!this.wrist) return;
+    _m1.compose(this.p, this.q, _one).multiply(this.handInv).invert();
+    const d = _v6.copy(elbow).applyMatrix4(_m1).sub(this.wrist.position);
+    if (d.lengthSq() < 1e-8) return;
+    _q4.setFromUnitVectors(Z, d.normalize());
+    const ang = 2 * Math.acos(Math.min(1, Math.abs(_q4.w)));
+    this.wrist.quaternion.copy(_qI).slerp(_q4, ang > BEND ? BEND / ang : 1);
   }
 }
 
@@ -320,6 +478,22 @@ export class Viewmodel {
     // (the arms' materials too: the pass's exposure and reflections, like the guns')
     if (arms?.R) { this.armR?.root.removeFromParent(); this.armR = new Arm(arms.R); prepAll(this.armR.root); this.rig.add(this.armR.root); }
     if (arms?.L) { this.armL?.root.removeFromParent(); this.armL = new Arm(arms.L); prepAll(this.armL.root); this.rig.add(this.armL.root); }
+    if (arms?.Lopen && this.armL) this.armL.addVariant('open', arms.Lopen);
+    // each gun's grips: where each hand closes, and the fist opened to fit (defs hands)
+    for (const [id, g] of Object.entries(this.guns)) {
+      g.fit = {};
+      for (const side of ['R', 'L']) {
+        const spec = g.def.hands?.[side], arm = side === 'R' ? this.armR : this.armL;
+        if (!spec || !arm) continue;
+        const f = fitGrip(g, spec);
+        if (!f) continue;
+        g.fit[side] = f.node;
+        g.anchors[side === 'R' ? AN.gripR : AN.gripL] = f.node;
+        arm.fit(id, f.hy, f.hz, spec.open ? 'open' : null);
+      }
+    }
+    this.armR?.use(null); this.armL?.use(null);
+    if (this.gun) { this.armR?.use(this.gun.def.id); this.armL?.use(this.gun.def.id); }
     this.props = this.props || new Array(PROPS.list.length).fill(null);
     const setProp = (id, root, hand, inHand) => {
       if (!root) return;
@@ -440,6 +614,7 @@ export class Viewmodel {
       if (this.gun) { this.gun.root.visible = false; this.gun.flash.visible = false; }
       if (gun) gun.root.visible = true;
       this.gun = gun;
+      this.armR?.use(gun ? gun.def.id : null); this.armL?.use(gun ? gun.def.id : null);
     }
     if ((this.lightScan -= dt) <= 0) { this.lightScan = 1; this.scanLights(); }
     const show = (!!gun && s.up > 0.001) || s.armL;
@@ -533,6 +708,7 @@ export class Viewmodel {
       if (s.armR) {
         this.hand(s.pose.a[CH.rh], s.pose.b[CH.rh], s.pose.w[CH.rh], this.elbowR, this.armR);
         if (hw > 0) { this.armR.p.lerp(held.rp, hw); this.armR.q.slerp(held.rq, hw); }
+        this.armR.bend(this.elbowR);
         this.placeArm(this.armR);
       }
     }
@@ -541,6 +717,7 @@ export class Viewmodel {
       if (s.armL) {
         this.hand(s.pose.a[CH.lh], s.pose.b[CH.lh], s.pose.w[CH.lh], this.elbowL, this.armL);
         if (hw > 0) { this.armL.p.lerp(held.lp, hw); this.armL.q.slerp(held.lq, hw); }
+        this.armL.bend(this.elbowL);
         this.placeArm(this.armL);
       }
     }
@@ -583,14 +760,27 @@ export class Viewmodel {
     this.anchor(a, _m1).decompose(_v3, _q1, _sc);
     this.anchor(b, _m2).decompose(_v4, _q2, _sc);
     out.p.copy(_v3).lerp(_v4, w);
-    _q1.slerp(_q2, w);
-    const zf = _v3.copy(elbow).sub(out.p).normalize();
-    const yb = _v4.copy(YUP).applyQuaternion(_q1);
+    if (!this.fitted(a)) this.aimAt(_q1, out.p, elbow);
+    if (!this.fitted(b)) this.aimAt(_q2, out.p, elbow);
+    out.q.copy(_q1).slerp(_q2, w);
+  }
+  // a grip this gun has fitted a fist to (the hand keeps that frame)
+  fitted(id) {
+    if (id === AN.restL) id = this.restL;
+    else if (id === AN.restR) id = this.restR;
+    const f = this.gun?.fit;
+    return !!f && ((id === AN.gripR && !!f.R) || (id === AN.gripL && !!f.L));
+  }
+  // an anchor's frame turned so the forearm (+z) runs at the elbow, the back of the hand kept as
+  // near the anchor's +y as that allows
+  aimAt(q, p, elbow) {
+    const zf = _v5.copy(elbow).sub(p).normalize();
+    const yb = _v6.copy(YUP).applyQuaternion(q);
     yb.addScaledVector(zf, -yb.dot(zf));
     if (yb.lengthSq() < 1e-6) yb.copy(XAX).addScaledVector(zf, -zf.x);
     yb.normalize();
-    const xr = _v5.crossVectors(yb, zf);
-    out.q.setFromRotationMatrix(_m3.makeBasis(xr, yb, zf));
+    const xr = _v7.crossVectors(yb, zf);
+    q.setFromRotationMatrix(_m3.makeBasis(xr, yb, zf));
   }
 
   placeArm(arm) {

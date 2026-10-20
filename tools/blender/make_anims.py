@@ -66,12 +66,17 @@ def hand_curl(pose, sd, curl, thumb=0.4):
     for j in (1, 2, 3):
         pose[f'thumb_0{j}_{sd}'] = ('local', R(X, thumb * 25))
 
+# the rig's rest pose has the elbows already bent this much: a clip's elbow is the bend it shows,
+# so the rest's own is taken off first (without that, every arm was carried half raised)
+ELBOW_REST = 26
+
 def arms_down(pose, s, out=8, fwd=0, elbow=12, twist=0):
     """from the A-pose rest (arms 42 degrees out) down to the side, swung forward by fwd, the
-    forearm bent by elbow (twist turns the upper arm about its own length first: inward > 0)"""
+    forearm bent by elbow (twist turns the upper arm about the vertical first; on this rig a
+    negative twist brings a bent forearm round in front of the body)"""
     sd = 'l' if s > 0 else 'r'
     pose[f'upperarm_{sd}'] = R(X, -fwd) @ R(Y, (42 - out) * s) @ R(Z, twist * s)
-    pose[f'lowerarm_{sd}'] = ang(pitch=-elbow, s=s)
+    pose[f'lowerarm_{sd}'] = ang(pitch=-(elbow - ELBOW_REST), s=s)
 
 def base_stand(t):
     pose = {}
@@ -122,8 +127,8 @@ def walk(t, L=32 / FPS):
     legs_walk(pose, p)
     for s, sd, ph in ((1, 'l', 0.0), (-1, 'r', 0.5)):
         a = (p + ph + 0.5) % 1
-        swing = 13 * math.cos(2 * math.pi * a)
-        arms_down(pose, s, out=11, fwd=-swing + 3, elbow=14 + 10 * max(0, -math.cos(2 * math.pi * a)))
+        swing = 15 * math.cos(2 * math.pi * a)
+        arms_down(pose, s, out=9, fwd=-swing + 2, elbow=10 + 16 * max(0, -math.cos(2 * math.pi * a)))
     pose['spine_01'] = ang(yaw=2.5 * math.cos(2 * math.pi * p), pitch=1)
     pose['spine_02'] = ang(yaw=2.5 * math.cos(2 * math.pi * p), roll=1.5 * math.sin(2 * math.pi * p))
     pose['spine_03'] = ang(yaw=2 * math.cos(2 * math.pi * p), pitch=1)
@@ -163,13 +168,13 @@ def talk(t, L=6.0):
     pose = idle(t * 8 / L, 8.0)
     up = ease(t, 0.3, 0.8) * (1 - ease(t, 5.2, 5.8))
     beat = math.sin(t * 2 * math.pi * 1.7) * 0.5 + math.sin(t * 2 * math.pi * 0.9 + 1) * 0.5
-    arms_down(pose, -1, out=16, fwd=18 * up, elbow=14 + up * (62 + 12 * beat))
-    pose['hand_r'] = ang(pitch=-10 * up, roll=-20 * up * (0.5 + 0.5 * beat), s=-1)
+    arms_down(pose, -1, out=7, fwd=15 * up, elbow=12 + up * (50 + 10 * beat), twist=-30 * up)
+    pose['hand_r'] = ang(pitch=-8 * up * (0.5 + 0.5 * beat), roll=-6 * up, s=-1)
     up2 = ease(t, 2.0, 2.6) * (1 - ease(t, 3.8, 4.4))
-    arms_down(pose, 1, out=14, fwd=12 * up2, elbow=14 + up2 * 50)
+    arms_down(pose, 1, out=8, fwd=12 * up2, elbow=12 + up2 * 38, twist=-20 * up2)
     nod = 3 * math.sin(t * 2 * math.pi * 1.3) * up
     pose['head'] = ang(pitch=-2 + nod, yaw=6 * math.sin(t * 0.9), roll=2 * math.sin(t * 1.3))
-    hands(pose, 0.25 + 0.15 * up)
+    hands(pose, 0.45 + 0.1 * up, 0.45)
     return pose
 
 def rope(t, Lc=1.8):
@@ -219,11 +224,11 @@ def gauges(t, L=6.0):
     lean = ease(t, 0.2, 0.9) * (1 - ease(t, 5.2, 5.9))
     pose['spine_01'] = ang(pitch=5 * lean); pose['spine_02'] = ang(pitch=4 * lean)
     tap = ease(t, 1.4, 1.9) * (1 - ease(t, 3.2, 3.7))
-    arms_down(pose, -1, out=12, fwd=20 + 50 * tap, elbow=30 + 50 * tap)
+    arms_down(pose, -1, out=12, fwd=20 + 50 * tap, elbow=40 + 60 * tap)
     pose['hand_r'] = ang(pitch=-25 * tap, s=-1)
     for j in (1, 2, 3): pose[f'index_0{j}_r'] = ('local', R(X, 5))
     knock = math.sin(t * 2 * math.pi * 4) * 6 * (ease(t, 2.2, 2.4) - ease(t, 2.9, 3.1))
-    pose['lowerarm_r'] = ang(pitch=-(30 + 50 * tap + knock), s=-1)
+    pose['lowerarm_r'] = ang(pitch=-(40 + 60 * tap + knock - ELBOW_REST), s=-1)
     look = 15 * math.sin(t * 2 * math.pi / L)
     pose['neck_01'] = ang(pitch=2 + 3 * lean, yaw=look * 0.4); pose['head'] = ang(pitch=-4 + 4 * math.sin(t * 2.3) * lean, yaw=look * 0.6)
     return pose

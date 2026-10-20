@@ -96,6 +96,7 @@ export class Crew {
     const pick = () => {
       const vs = window.speechSynthesis?.getVoices?.() || [];
       this.russian = vs.find((v) => /^ru/i.test(v.lang)) || null;
+      this.english = vs.find((v) => /^en-(GB|US)/i.test(v.lang)) || vs.find((v) => /^en/i.test(v.lang)) || null;
     };
     pick();
     window.speechSynthesis?.addEventListener?.('voiceschanged', pick);
@@ -158,7 +159,8 @@ export class Crew {
     const p = o.p || null;
     const est = clamp(en.length * 0.065 + 1.2, 2.5, 9);
     const begin = (secs) => {
-      this.ui.subtitle(cast.name, ru, en, secs + 0.5);
+      // (English voices: the English alone; Russian ones: the Russian with the English under it)
+      if (this.lang === 'en') this.ui.subtitle(cast.name, en, '', secs + 0.5); else this.ui.subtitle(cast.name, ru, en, secs + 0.5);
       if (p && this.people.includes(p)) p.talkT = secs + 0.3;
       o.onStart?.(secs + 0.3);
     };
@@ -169,7 +171,7 @@ export class Crew {
       if (this.line !== line) return;
       if (p && p.speech === HUSH) p.speech = null;
       begin(est);
-      const spoke = this.synth(ru, cast, o.radio ? 0.75 : 0.9);
+      const spoke = this.synth(ru, cast, o.radio ? 0.75 : 0.9, en);
       if (!spoke && !o.radio) this.audio?.voice?.(p ? p.mouthWorld(_mw) : null, est);
     };
     const start = (buf) => {
@@ -201,11 +203,15 @@ export class Crew {
   }
 
   // the browser's Russian voice, if it has one
-  synth(ru, cast, volume) {
-    if (!this.russian || !window.speechSynthesis) return false;
+  // which voices speak: 'ru' (the recordings, English subtitles) or 'en'
+  setLang(lang) { this.lang = lang === 'en' ? 'en' : 'ru'; this.voices.setLang(this.lang); }
+
+  synth(ru, cast, volume, en = null) {
+    const voice = this.lang === 'en' && en && this.english ? this.english : this.russian;
+    if (!voice || !window.speechSynthesis) return false;
     try {
-      const u = new SpeechSynthesisUtterance(ru);
-      u.voice = this.russian; u.lang = this.russian.lang; u.pitch = cast.pitch; u.rate = cast.rate; u.volume = volume;
+      const u = new SpeechSynthesisUtterance(voice === this.english ? en : ru);
+      u.voice = voice; u.lang = voice.lang; u.pitch = cast.pitch; u.rate = cast.rate; u.volume = volume;
       window.speechSynthesis.speak(u);
       return true;
     } catch { return false; }

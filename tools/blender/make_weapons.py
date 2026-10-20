@@ -2093,7 +2093,7 @@ def wrap_joints(r, phis, ay=0.0153, az=0.0190):
     A_y, A_z = ay + r, az + r
     return [(A_y * math.cos(math.radians(p)), -A_z * math.sin(math.radians(p))) for p in phis]
 
-def hand_field(side, trigger):
+def hand_field(side, trigger, open_=False):
     lo = (-0.066, -0.056, -0.112); hi = (0.066, 0.074, 0.112)
     F = SDF.Field(lo, hi, 0.0011)
     sx = side
@@ -2112,6 +2112,12 @@ def hand_field(side, trigger):
                (-0.0095, (0.0106, 0.0101, 0.0094, 0.0085), (38, 125, 186, 236)),
                (0.0105, (0.0102, 0.0097, 0.0090, 0.0081), (38, 124, 184, 232)),
                (0.0285, (0.0090, 0.0085, 0.0079, 0.0072), (40, 118, 174, 218))]
+    if open_:
+        # (the joints less bent: the tips stop at the handguard's upper corner, the index longest)
+        fingers = [(-0.0300, (0.0103, 0.0098, 0.0091, 0.0082), (38, 96, 134, 160)),
+                   (-0.0095, (0.0106, 0.0101, 0.0094, 0.0085), (38, 98, 138, 164)),
+                   (0.0105, (0.0102, 0.0097, 0.0090, 0.0081), (38, 97, 136, 161)),
+                   (0.0285, (0.0090, 0.0085, 0.0079, 0.0072), (40, 94, 128, 151))]
     for i, (x, radii, phis) in enumerate(fingers):
         if i == 0 and trigger:
             joints = [(0.0255, -0.0215), (0.0130, -0.0630), (-0.0010, -0.0815), (-0.0105, -0.0905)]
@@ -2166,11 +2172,11 @@ def sleeve_ring(z, r, n, ycen):
         out.append((rr * math.sin(th), ycen + rr * math.cos(th), z))
     return out
 
-def build_arm(side):
-    nm = 'R' if side > 0 else 'L'
+def build_arm(side, open_=False):
+    nm = ('R' if side > 0 else 'L') + ('_open' if open_ else '')
     body = Part(f'arm{nm}_body')
     def glove(b):
-        mesh_from_field(b, hand_field(side, trigger=side > 0))
+        mesh_from_field(b, hand_field(side, trigger=side > 0 and not open_, open_=open_))
     body.piece(glove, 'glove', ops=[('smooth', 0.6, 6), ('decimate', 7600)], wn=False, smooth=0, uvd=1.0, wset=0)
     # the knitted cuff: ribs round the wrist, its edge rolled
     def cuff(b):
@@ -2359,9 +2365,9 @@ def run():
         sc = use_scene('ASSET_arms')
         roots = []
         info = {}
-        for side in (1, -1):
+        for side, open_ in ((1, False), (-1, False), (-1, True)):
             t = time.time()
-            root, inf = build_arm(side)
+            root, inf = build_arm(side, open_)
             ms = meshes_under(root)
             inf['tris'] = {o.name: tris_of(o) for o in ms}
             inf['tris_total'] = sum(inf['tris'].values())
@@ -2376,7 +2382,7 @@ def run():
         if PREVIEW:
             for r in roots:
                 solo(sc, [r.name])
-                info[r.name]['previews'] = previews(sc, 'arm_' + r.name[-1], ARM_VIEWS)
+                info[r.name]['previews'] = previews(sc, 'arm_' + r.name[4:], ARM_VIEWS)
         if EXPORT:
             info['arms_glb'] = export_scene(sc, 'arms.glb')
             log('exported', info['arms_glb'])

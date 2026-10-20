@@ -39,7 +39,7 @@ export class UI {
     // the free voyage is gone, and with it the select that could have brought you back from it
     if (s.mode !== 'story') { s.mode = 'story'; saveSettings(s); }
     $('quality').value = s.quality; $('volume').value = s.volume;
-    $('music').checked = s.music; $('sens').value = s.sensitivity;
+    $('music').checked = s.music; $('sens').value = s.sensitivity; $('vlang').value = s.voiceLang || 'ru';
 
     $('play').addEventListener('click', () => this.onPlay?.());
     $('newgame').addEventListener('click', (e) =>
@@ -58,6 +58,7 @@ export class UI {
     $('volume').addEventListener('input', (e) => { s.volume = +e.target.value; saveSettings(s); this.onVolume?.(s.volume); });
     $('music').addEventListener('change', (e) => { s.music = e.target.checked; saveSettings(s); this.onMusic?.(s.music); });
     $('sens').addEventListener('input', (e) => { s.sensitivity = +e.target.value; saveSettings(s); });
+    $('vlang').addEventListener('change', (e) => { s.voiceLang = e.target.value; saveSettings(s); this.onVoiceLang?.(s.voiceLang); });
     this.showFps = !!s.showFps;
     $('fps').classList.toggle('hidden', !this.showFps);
     // a refused pointer lock (too soon after the last, or no gesture) would leave play frozen

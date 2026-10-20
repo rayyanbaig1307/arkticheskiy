@@ -128,6 +128,9 @@ const RIFLE_LOWERED = { pos: [0.03, -0.30, 0.08], rot: [-0.8, 0.35, 0.4] };
 export const WEAPONS = {
   pm: {
     id: 'pm', slot: 1, ammo: '9x18', cap: 8, auto: false,
+    // held in one hand, as an officer's pistol was (the left comes up only to reload)
+    oneHand: true,
+    hands: { R: { at: [0, -0.066, -0.013], axis: [0, -0.964, 0.267], back: [1, 0, 0], front: 0.022 } },
     damage: 34, range: 50, falloff: 0.6, rate: 0.12,
     spread: 0.030, aimSpread: 0.006,
     recoil: { pitch: 0.026, yaw: 0.009, keep: 0.2, back: 0.045, rise: 0.16, roll: 0.06, up: 0.006 },
@@ -144,6 +147,10 @@ export const WEAPONS = {
   },
   mosin: {
     id: 'mosin', slot: 2, ammo: '7.62x54R', cap: 5, auto: false,
+    hands: {
+      R: { at: [0, -0.042, 0.072], axis: [0, -0.276, 0.961], back: [0, -0.961, -0.276], mat: /wood/ },
+      L: { at: [0, -0.024, -0.31], axis: [0, 0, -1], back: [-0.35, -0.94, 0], mat: /wood/, open: true, top: 0.021 },
+    },
     damage: 120, range: 500, falloff: 0.75, rate: 0.3,
     spread: 0.028, aimSpread: 0.0009,
     recoil: { pitch: 0.062, yaw: 0.016, keep: 0.3, back: 0.09, rise: 0.22, roll: 0.08, up: 0.01 },
@@ -160,6 +167,10 @@ export const WEAPONS = {
   },
   akm: {
     id: 'akm', slot: 3, ammo: '7.62x39', cap: 30, auto: true,
+    hands: {
+      R: { at: [0, -0.082, -0.028], axis: [0, -0.946, 0.324], back: [1, 0, 0], mat: /wood/ },
+      L: { at: [0, -0.016, -0.40], axis: [0, 0, -1], back: [-0.35, -0.94, 0], mat: /wood/, open: true, top: 0.021 },
+    },
     damage: 42, range: 250, falloff: 0.65, rate: 0.1,
     spread: 0.035, aimSpread: 0.0045, bloom: 0.0035, bloomMax: 0.03,
     recoil: { pitch: 0.016, yaw: 0.010, keep: 0.35, keepAuto: 0.6, climb: 0.0016, back: 0.03, rise: 0.06, roll: 0.03, up: 0.004 },
@@ -176,6 +187,8 @@ export const WEAPONS = {
   },
   flaregun: {
     id: 'flaregun', slot: 4, ammo: 'flare', cap: 1, auto: false,
+    oneHand: true,
+    hands: { R: { at: [0, -0.060, 0.016], axis: [0, -0.949, 0.315], back: [1, 0, 0], front: 0.024 } },
     damage: 60, rate: 0.5, speed: 40,
     spread: 0.03, aimSpread: 0.01,
     recoil: { pitch: 0.04, yaw: 0.01, keep: 0.15, back: 0.06, rise: 0.25, roll: 0.05, up: 0.008 },

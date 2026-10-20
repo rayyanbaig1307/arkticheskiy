@@ -121,10 +121,10 @@ export class Weapons {
     const pick = (gltf, name) => gltf?.scene.getObjectByName(name) || null;
     const weapons = {};
     for (const id of [...ORDER, 'handflare']) { const o = pick(w, 'WPN_' + id); if (o) weapons[id] = o; }
-    const arms = { R: pick(a, 'ARM_R'), L: pick(a, 'ARM_L') };
+    const arms = { R: pick(a, 'ARM_R'), L: pick(a, 'ARM_L'), Lopen: pick(a, 'ARM_L_open') };
     if (!Object.keys(weapons).length && !arms.R && !arms.L) return false;
     this.stopAction(false);
-    this.vm.useModels({ weapons, arms: { R: arms.R || undefined, L: arms.L || undefined }, props: {} });
+    this.vm.useModels({ weapons, arms: { R: arms.R || undefined, L: arms.L || undefined, Lopen: arms.Lopen || undefined }, props: {} });
     return true;
   }
 
@@ -628,7 +628,7 @@ export class Weapons {
     vs.cold = cold;
     vs.armR = !!this.cur && this.up > 0;
     vs.armL = vs.armR || this.act === this.throwAct;
-    vs.restR = this.cur ? AN.gripR : AN.idleR; vs.restL = this.cur ? AN.gripL : AN.idleL;
+    vs.restR = this.cur ? AN.gripR : AN.idleR; vs.restL = this.cur && !WEAPONS[this.cur]?.oneHand ? AN.gripL : AN.idleL;
     this.vm.update(dt, vs);
     if (this.flareHeld) this.flareSys.setHeld(this.flareHeld, this.vm.flareTipWorld(_p));
 

@@ -98,6 +98,13 @@ point for aiming), `GRIP_R`, `GRIP_L`. Arms: `public/models/arms.glb`, roots `AR
 (gloved hands and sleeves), a bone or empty `HAND` at each palm. Until they exist, Weapons.js builds
 stand-ins in code.
 
+How a hand holds each gun is in defs.js (`hands: { R, L }`: `at` a point on the grip, `axis` the grip's
+line through the fist, `back` the side the back of the hand is on, `mat` which material counts as the
+grip, `front`/`top` to leave the trigger guard or the upper handguard out, `open` for the open
+support hand, arms.glb's `ARM_L_open`). Viewmodel.js fits the fist to that cross-section of the gun's
+own mesh (it opens the fist's hole to fit), keeps the hand in the grip's frame and bends the wrist
+toward the elbow. `oneHand` guns (the PM, the flare pistol) keep the left hand down except to reload.
+
 ## Documents (src/story/Documents.js)
 
 ```js

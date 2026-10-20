@@ -1,0 +1,353 @@
+{
+ "story_c1_dikson_1": {
+  "file": "story_c1_dikson_1.mp3",
+  "who": "radio",
+  "ru": "«Полярник», я Диксон-радио. «Северный» на связь не выходит. Следуйте по назначению, докладывайте каждые сутки.",
+  "en": "Polyarnik, this is Dikson Radio. Severny is still not answering. Proceed as ordered and report every twenty-four hours.",
+  "lang": "en",
+  "voice": "onwK4e9ZLuTAKqWW03F9",
+  "model": "eleven_v4"
+ },
+ "story_c1_brief_1": {
+  "file": "story_c1_brief_1.mp3",
+  "who": "captain",
+  "ru": "Второй, зайди. Слушай внимательно, повторять не буду.",
+  "en": "Second, come in. Listen carefully, I won't say it twice.",
+  "lang": "en",
+  "voice": "pM78bgjPVk0JXtaEnFoj",
+  "model": "eleven_v4"
+ },
+ "story_c1_brief_2": {
+  "file": "story_c1_brief_2.mp3",
+  "who": "captain",
+  "ru": "«Северный» молчит восьмые сутки. Ни сводок, ни ответа на вызовы.",
+  "en": "Severny has been silent for eight days. No weather reports, no answer to our calls.",
+  "lang": "en",
+  "voice": "pM78bgjPVk0JXtaEnFoj",
+  "model": "eleven_v4"
+ },
+ "story_c1_brief_3": {
+  "file": "story_c1_brief_3.mp3",
+  "who": "captain",
+  "ru": "Везём им муку, солярку и почту. И сержанта Орлова с его людьми. Зачем — не спрашивай, мне тоже не сказали.",
+  "en": "We're bringing them flour, diesel and the mail. And Sergeant Orlov and his men. Don't ask me why. Nobody told me either.",
+  "lang": "en",
+  "voice": "pM78bgjPVk0JXtaEnFoj",
+  "model": "eleven_v4"
+ },
+ "story_c1_brief_4": {
+  "file": "story_c1_brief_4.mp3",
+  "who": "captain",
+  "ru": "Громова я знаю двадцать лет. Он бы не молчал. Значит, у них беда.",
+  "en": "I've known Gromov twenty years. He wouldn't go quiet. So they're in trouble.",
+  "lang": "en",
+  "voice": "pM78bgjPVk0JXtaEnFoj",
+  "model": "eleven_v4"
+ },
+ "story_c1_brief_5": {
+  "file": "story_c1_brief_5.mp3",
+  "who": "captain",
+  "ru": "Завтра к вечеру будем у острова. На берег с Орловым пойдёшь ты: ты видел схему станции. Боцман пойдёт с вами.",
+  "en": "We'll be off the island tomorrow evening. You go ashore with Orlov: you've seen the station's plan. The bosun goes with you.",
+  "lang": "en",
+  "voice": "pM78bgjPVk0JXtaEnFoj",
+  "model": "eleven_v4"
+ },
+ "story_c1_brief_6": {
+  "file": "story_c1_brief_6.mp3",
+  "who": "captain",
+  "ru": "А пока — твоя вахта. Держи курс и смотри на лёд.",
+  "en": "Until then it's your watch. Hold the course and watch the ice.",
+  "lang": "en",
+  "voice": "pM78bgjPVk0JXtaEnFoj",
+  "model": "eleven_v4"
+ },
+ "story_c1_pm_1": {
+  "file": "story_c1_pm_1.mp3",
+  "who": "soldier1",
+  "ru": "Второй помощник? Сержант Орлов. Возьмите.",
+  "en": "Second mate? Sergeant Orlov. Take this.",
+  "lang": "en",
+  "voice": "6A9D8WSMm4rFsg2DWFeE",
+  "model": "eleven_v4"
+ },
+ "story_c1_pm_2": {
+  "file": "story_c1_pm_2.mp3",
+  "who": "soldier1",
+  "ru": "Пистолет Макарова, восемь патронов в магазине. Это от медведей.",
+  "en": "A Makarov, eight rounds in the magazine. It's for the bears.",
+  "lang": "en",
+  "voice": "6A9D8WSMm4rFsg2DWFeE",
+  "model": "eleven_v4"
+ },
+ "story_c1_pm_3": {
+  "file": "story_c1_pm_3.mp3",
+  "who": "soldier1",
+  "ru": "На берегу держитесь за мной. Скажу «назад» — бегом назад и не оглядываться.",
+  "en": "Ashore, you stay behind me. If I say \"back\", you run back and don't look round.",
+  "lang": "en",
+  "voice": "6A9D8WSMm4rFsg2DWFeE",
+  "model": "eleven_v4"
+ },
+ "story_c1_pm_4": {
+  "file": "story_c1_pm_4.mp3",
+  "who": "soldier1",
+  "ru": "И ещё. Если со станции вас позовут по имени — не отвечайте.",
+  "en": "And one more thing. If anyone at the station calls you by name, don't answer.",
+  "lang": "en",
+  "voice": "6A9D8WSMm4rFsg2DWFeE",
+  "model": "eleven_v4"
+ },
+ "story_c1_radar_1": {
+  "file": "story_c1_radar_1.mp3",
+  "who": "captain",
+  "ru": "Радар погас. Второй, спустись в машинное, глянь щит. Кузнецов там.",
+  "en": "The radar's gone dark. Second, go down to the engine room and look at the switchboard. Kuznetsov's down there.",
+  "lang": "en",
+  "voice": "pM78bgjPVk0JXtaEnFoj",
+  "model": "eleven_v4"
+ },
+ "story_c1_radar_2": {
+  "file": "story_c1_radar_2.mp3",
+  "who": "engineer",
+  "ru": "Опять предохранитель. Вторую ночь подряд. Запасные в ящике на щите, верхний ряд.",
+  "en": "The fuse again. Second night running. Spares are in the box on the switchboard, top row.",
+  "lang": "en",
+  "voice": "9AjtU6o19uipv7QL8dLL",
+  "model": "eleven_v4"
+ },
+ "story_c1_radar_3": {
+  "file": "story_c1_radar_3.mp3",
+  "who": "engineer",
+  "ru": "Не понимаю. Нагрузки нет, а он горит. Будто кто-то его выкручивает.",
+  "en": "I don't understand it. There's no load, and it burns out. As if someone were unscrewing it.",
+  "lang": "en",
+  "voice": "9AjtU6o19uipv7QL8dLL",
+  "model": "eleven_v4"
+ },
+ "story_c1_radar_4": {
+  "file": "story_c1_radar_4.mp3",
+  "who": "engineer",
+  "ru": "Свет! Стой где стоишь, по трапу в темноте не ходи.",
+  "en": "The lights! Stay where you are, don't take the ladder in the dark.",
+  "lang": "en",
+  "voice": "9AjtU6o19uipv7QL8dLL",
+  "model": "eleven_v4"
+ },
+ "story_c1_knock_1": {
+  "file": "story_c1_knock_1.mp3",
+  "who": "engineer",
+  "ru": "Слышишь? Это не лёд. Лёд скребёт, а это стучит.",
+  "en": "Hear that? That's not ice. Ice scrapes. This knocks.",
+  "lang": "en",
+  "voice": "9AjtU6o19uipv7QL8dLL",
+  "model": "eleven_v4"
+ },
+ "story_c1_knock_2": {
+  "file": "story_c1_knock_2.mp3",
+  "who": "engineer",
+  "ru": "Три удара. Пауза. Опять три. Снаружи, ниже ватерлинии.",
+  "en": "Three knocks. A pause. Three again. Outside, below the waterline.",
+  "lang": "en",
+  "voice": "9AjtU6o19uipv7QL8dLL",
+  "model": "eleven_v4"
+ },
+ "story_c1_knock_3": {
+  "file": "story_c1_knock_3.mp3",
+  "who": "deckhand",
+  "ru": "Там же вода. Кто может стучать из воды?",
+  "en": "There's only water out there. Who can knock from the water?",
+  "lang": "en",
+  "voice": "Uv3rf12Omd9Asyv54Bqw",
+  "model": "eleven_v4"
+ },
+ "story_c1_radio_1": {
+  "file": "story_c1_radio_1.mp3",
+  "who": "cook",
+  "ru": "Тише! Приёмник что-то ловит. Это «Северный»?",
+  "en": "Quiet! The set's picking something up. Is that Severny?",
+  "lang": "en",
+  "voice": "LTkx8oHrUXaND7aaxdTA",
+  "model": "eleven_v4"
+ },
+ "story_c1_radio_2": {
+  "file": "story_c1_radio_2.mp3",
+  "who": "markova",
+  "ru": "Раз. Два. Три. Четыре. Пять. Шесть. Семь.",
+  "en": "One. Two. Three. Four. Five. Six. Seven.",
+  "lang": "en",
+  "voice": "t6lBrEl93uCiLR1Lgm8v",
+  "model": "eleven_v4"
+ },
+ "story_c1_radio_3": {
+  "file": "story_c1_radio_3.mp3",
+  "who": "markova",
+  "ru": "Восемь. Девять. Десять. Одиннадцать. Двенадцать.",
+  "en": "Eight. Nine. Ten. Eleven. Twelve.",
+  "lang": "en",
+  "voice": "t6lBrEl93uCiLR1Lgm8v",
+  "model": "eleven_v4"
+ },
+ "story_c1_radio_4": {
+  "file": "story_c1_radio_4.mp3",
+  "who": "deckhand",
+  "ru": "Это женщина. Она просто считает. Зачем она считает?",
+  "en": "It's a woman. She's just counting. Why is she counting?",
+  "lang": "en",
+  "voice": "Uv3rf12Omd9Asyv54Bqw",
+  "model": "eleven_v4"
+ },
+ "story_c1_radio_5": {
+  "file": "story_c1_radio_5.mp3",
+  "who": "mimic",
+  "ru": "Андрей. Андрей Никитин. Ты меня слышишь?",
+  "en": "Andrei. Andrei Nikitin. Can you hear me?",
+  "lang": "en",
+  "voice": "t6lBrEl93uCiLR1Lgm8v",
+  "model": "eleven_v4"
+ },
+ "story_c1_radio_6": {
+  "file": "story_c1_radio_6.mp3",
+  "who": "mimic",
+  "ru": "Мы тебя ждём, Андрей. Нам холодно.",
+  "en": "We're waiting for you, Andrei. We're cold.",
+  "lang": "en",
+  "voice": "t6lBrEl93uCiLR1Lgm8v",
+  "model": "eleven_v4"
+ },
+ "story_c1_radio_7": {
+  "file": "story_c1_radio_7.mp3",
+  "who": "cook",
+  "ru": "Откуда она знает, как тебя зовут?",
+  "en": "How does she know your name?",
+  "lang": "en",
+  "voice": "LTkx8oHrUXaND7aaxdTA",
+  "model": "eleven_v4"
+ },
+ "story_c1_radio_8": {
+  "file": "story_c1_radio_8.mp3",
+  "who": "soldier1",
+  "ru": "Выключите. Выключите приёмник. И никому не отвечать.",
+  "en": "Switch it off. Switch that set off. And nobody answers it.",
+  "lang": "en",
+  "voice": "6A9D8WSMm4rFsg2DWFeE",
+  "model": "eleven_v4"
+ },
+ "story_c1_bear_1": {
+  "file": "story_c1_bear_1.mp3",
+  "who": "bosun",
+  "ru": "Глянь на льдину. Медведь. Разорван от горла до брюха.",
+  "en": "Look at that floe. A bear. Torn open from throat to belly.",
+  "lang": "en",
+  "voice": "2Zst4rvX5S2nMbiauLDN",
+  "model": "eleven_v4"
+ },
+ "story_c1_bear_2": {
+  "file": "story_c1_bear_2.mp3",
+  "who": "bosun",
+  "ru": "Кто может так порвать медведя? Тут крупнее медведя никого нет.",
+  "en": "What could tear a bear like that? There's nothing up here bigger than a bear.",
+  "lang": "en",
+  "voice": "2Zst4rvX5S2nMbiauLDN",
+  "model": "eleven_v4"
+ },
+ "story_c1_bear_3": {
+  "file": "story_c1_bear_3.mp3",
+  "who": "deckhand",
+  "ru": "Он его даже не ел. Порвал и бросил.",
+  "en": "It didn't even eat it. Tore it open and left it.",
+  "lang": "en",
+  "voice": "Uv3rf12Omd9Asyv54Bqw",
+  "model": "eleven_v4"
+ },
+ "story_c1_figure_1": {
+  "file": "story_c1_figure_1.mp3",
+  "who": "soldier3",
+  "ru": "Человек на льду! Справа по носу, в луче!",
+  "en": "Man on the ice! Starboard bow, in the beam!",
+  "lang": "en",
+  "voice": "MWyJiWDobXN8FX3CJTdE",
+  "model": "eleven_v4"
+ },
+ "story_c1_figure_2": {
+  "file": "story_c1_figure_2.mp3",
+  "who": "captain",
+  "ru": "Где? Нет там никого. Левее... правее... Пусто.",
+  "en": "Where? There's nobody there. Left a bit... right... Empty.",
+  "lang": "en",
+  "voice": "pM78bgjPVk0JXtaEnFoj",
+  "model": "eleven_v4"
+ },
+ "story_c1_figure_3": {
+  "file": "story_c1_figure_3.mp3",
+  "who": "soldier3",
+  "ru": "Он стоял. Стоял и смотрел на нас. Без шапки.",
+  "en": "He was standing there. Standing and looking at us. No hat.",
+  "lang": "en",
+  "voice": "MWyJiWDobXN8FX3CJTdE",
+  "model": "eleven_v4"
+ },
+ "story_c1_figure_4": {
+  "file": "story_c1_figure_4.mp3",
+  "who": "soldier3",
+  "ru": "Опять! Вон он... Нет. Опять нет.",
+  "en": "Again! There he is... No. Gone again.",
+  "lang": "en",
+  "voice": "MWyJiWDobXN8FX3CJTdE",
+  "model": "eleven_v4"
+ },
+ "story_c1_approach_1": {
+  "file": "story_c1_approach_1.mp3",
+  "who": "captain",
+  "ru": "Вот и «Северный». Ни одного огня. Ни на мачте, ни в окнах.",
+  "en": "There's Severny. Not a single light. Not on the mast, not in the windows.",
+  "lang": "en",
+  "voice": "pM78bgjPVk0JXtaEnFoj",
+  "model": "eleven_v4"
+ },
+ "story_c1_approach_2": {
+  "file": "story_c1_approach_2.mp3",
+  "who": "captain",
+  "ru": "Подводи к причалу, малым ходом. Боцман, приготовить концы.",
+  "en": "Bring her in to the berth, slow ahead. Bosun, get the lines ready.",
+  "lang": "en",
+  "voice": "pM78bgjPVk0JXtaEnFoj",
+  "model": "eleven_v4"
+ },
+ "story_c1_approach_3": {
+  "file": "story_c1_approach_3.mp3",
+  "who": "bosun",
+  "ru": "Причал весь во льду. Его неделю никто не чистил.",
+  "en": "The berth's all iced over. Nobody's cleared it for a week.",
+  "lang": "en",
+  "voice": "2Zst4rvX5S2nMbiauLDN",
+  "model": "eleven_v4"
+ },
+ "story_c1_moored_1": {
+  "file": "story_c1_moored_1.mp3",
+  "who": "captain",
+  "ru": "Стоим. Орлов, ваши готовы? Второй и боцман идут с вами.",
+  "en": "We're alongside. Orlov, are your men ready? The second mate and the bosun go with you.",
+  "lang": "en",
+  "voice": "pM78bgjPVk0JXtaEnFoj",
+  "model": "eleven_v4"
+ },
+ "story_c1_moored_2": {
+  "file": "story_c1_moored_2.mp3",
+  "who": "soldier1",
+  "ru": "Готовы. Белов — со мной. Ахметов, Смирнов — у трапа. На борт никого не пускать. Никого.",
+  "en": "Ready. Belov, with me. Akhmetov, Smirnov: at the gangway. Let nobody aboard. Nobody.",
+  "lang": "en",
+  "voice": "6A9D8WSMm4rFsg2DWFeE",
+  "model": "eleven_v4"
+ },
+ "story_c1_moored_3": {
+  "file": "story_c1_moored_3.mp3",
+  "who": "captain",
+  "ru": "Второй. Будь осторожен. Связь по рации каждые полчаса.",
+  "en": "Second. Be careful. Radio check every half hour.",
+  "lang": "en",
+  "voice": "pM78bgjPVk0JXtaEnFoj",
+  "model": "eleven_v4"
+ }
+}
