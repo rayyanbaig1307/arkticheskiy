@@ -149,36 +149,51 @@ async function boot() {
   const enginePos = new THREE.Vector3(), bowPos = new THREE.Vector3();
   const ENGINE = new THREE.Vector3(0, 0.4, 3), BOW = new THREE.Vector3(0, 0.3, -19);
 
-  // the autopilot: for the station on the story's voyage (else a wander through the field),
-  // steering round anything big ahead and keeping off the shelf's edge
-  let wander = 0, wanderT = 0;
+  // the mate has the helm, always (you don't steer her): every half second he looks along a fan of
+  // headings either side of the course and takes the clearest one near it (no berg in her way for
+  // 380 m, a berg's breadth and hers to spare; as little pack ice as he can; off the shelf's edge),
+  // holding to his choice unless another is clearly better, so she doesn't weave. He goes full ahead
+  // in open water and slows when something big is close ahead; the story's stops are its own.
+  const pilot = { pick: null, t: 0, wander: 0, wanderT: 0 };
+  const BIG = (p) => p.cls === 'berg' || (p.cls === 'bit' && p.scale > 1.1);
   boat.pilot = (b) => {
-    wanderT -= 1 / 60;
-    if (wanderT <= 0) { wanderT = 25 + Math.random() * 30; wander = (Math.random() - 0.5) * 0.9; }
-    let want = b.heading + wander * 0.02;
+    const dt = 1 / 60;
     const tgt = director?.pilotTarget() || story?.pilotTarget();
-    if (tgt) want = Math.atan2(-(tgt.x - b.x), -(tgt.z - b.z));
-    const f = b.forward;
-    if (station.ready) {
-      const ahead = station.clearance(b.x + f.x * 220, b.z + f.z * 220);
-      if (ahead < 160) {
-        // (turn along the edge: whichever way is nearer to parallel)
-        const along = Math.atan2(-1, 0), w1 = angleDiff(b.heading, along), w2 = angleDiff(b.heading, along + Math.PI);
-        want = b.heading + (Math.abs(w1) < Math.abs(w2) ? w1 : w2) * (1 - ahead / 160) * 1.5 + (tgt ? angleDiff(b.heading, want) * (ahead / 160) : 0);
+    if ((pilot.wanderT -= dt) <= 0) { pilot.wanderT = 25 + Math.random() * 30; pilot.wander = (Math.random() - 0.5) * 0.6; }
+    const course = tgt ? Math.atan2(-(tgt.x - b.x), -(tgt.z - b.z)) : (pilot.pick ?? b.heading) + pilot.wander * 0.01;
+    if ((pilot.t -= dt) <= 0 || pilot.pick === null) {
+      pilot.t = 0.5;
+      const near = ice.near(b.x, b.z, 400);
+      let best = course, bestCost = Infinity, blocked = Infinity;
+      for (let k = -9; k <= 9; k++) {
+        const h = course + k * 0.09;
+        const fx = -Math.sin(h), fz = -Math.cos(h);
+        let cost = Math.abs(k) * 0.6 + (pilot.pick === null ? 0 : Math.abs(angleDiff(pilot.pick, h)) * 3);
+        let block = Infinity;
+        for (const p of near) {
+          const dx = p.x - b.x, dz = p.z - b.z, along = dx * fx + dz * fz;
+          if (along < -8) continue;
+          const side = Math.abs(dx * -fz + dz * fx), r = p.shape.radius * p.scale;
+          if (BIG(p)) {
+            const clear = r + 26;
+            if (side < clear && along < 380) { block = Math.min(block, along); cost += 30 + 70 * (1 - Math.max(0, along) / 380) * (1 - side / clear); }
+          } else if (side < r + 5 && along < 170) cost += (p.cls === 'floe' ? 0.9 * p.scale : 0.35) * (1 - along / 170);
+        }
+        if (station.ready) { const cl = station.clearance(b.x + fx * 200, b.z + fz * 200); if (cl < 140) cost += (140 - cl) * 0.6; }
+        if (cost < bestCost) { bestCost = cost; best = h; blocked = block; }
+      }
+      pilot.pick = best;
+      // her speed: full ahead in the clear, slow ahead with a berg close on the way she's going
+      // (and no faster than the story allows: chapter 1 holds her back till its scenes have been)
+      const cap = director?.pilotCap?.() ?? 3;
+      if (b.engineOn && !b.docking && !b.moored && (b.order > 0 || pilot.capped)) {
+        const near700 = tgt && Math.hypot(tgt.x - b.x, tgt.z - b.z) < 260;
+        const want = Math.min(cap, blocked < 140 ? 1 : near700 ? 2 : 3);
+        pilot.capped = want === 0;
+        if (want !== b.order) b.setOrder(want);
       }
     }
-    let avoid = 0;
-    for (const p of ice.near(b.x, b.z, 420)) {
-      if (p.cls !== 'berg' && p.cls !== 'bit') continue;
-      const dx = p.x - b.x, dz = p.z - b.z;
-      const ahead = dx * f.x + dz * f.z;
-      if (ahead < 0) continue;
-      const side = dx * -f.z + dz * f.x;             // + to port
-      const clear = p.shape.radius * p.scale + 35;
-      if (Math.abs(side) < clear) avoid += (side > 0 ? -1 : 1) * (1 - Math.abs(side) / clear) * (1 - ahead / 420) * 2.2;
-    }
-    want += avoid * 0.5;
-    return b.heading + Math.max(-0.5, Math.min(0.5, angleDiff(b.heading, want)));
+    return b.heading + Math.max(-0.5, Math.min(0.5, angleDiff(b.heading, pilot.pick)));
   };
 
   let story = null, director = null;

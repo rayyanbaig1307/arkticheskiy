@@ -67,8 +67,8 @@ dark and the cold, steal your warmth, cannot be shot, and back away from a stron
    Turned. Gromov, what he has become. Set the thermite on the cave's three ice pillars and run.
 5. **Домой — Home** (the tug, ~20 min). Dawn twilight, the aurora gone red. The *Polyarnik* dark
    at her lines, her crew taken. Start the engine (air bottles, fuel, the button) with them coming
-   down the stairs, cast off the lines with bears on the ice, take the wheel from what is standing
-   at it, and break out through the ice. The radio, in open water: «Полярник, я Северный… Мы ждём
+   down the stairs, cast off the lines with bears on the ice, kill what is standing at the wheel,
+   set her on the autopilot, and break out through the ice. The radio, in open water: «Полярник, я Северный… Мы ждём
    вас».
 
 ## Places

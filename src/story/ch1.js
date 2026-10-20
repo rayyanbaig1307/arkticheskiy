@@ -56,6 +56,14 @@ export const CH1 = {
     const s = k <= order.indexOf('brief') ? sp.spawn : k <= order.indexOf('orlov') ? sp.captain : sp.wheel;
     if (s) d.ctx.player.spawn({ pos: s.pos.clone().add(new THREE.Vector3(0.6, 0, 0.6)), yaw: s.yaw });
   },
+  // she mustn't be at the station before the story is: half ahead to begin with, slow ahead nearer,
+  // stopped in the ice 750 m off until the watch on the ice begins (then full ahead, in)
+  pilotCap(d) {
+    const ids = CH1.steps.map((s) => s.id), k = ids.indexOf(d.step?.id);
+    if (k < 0 || k >= ids.indexOf('ice') || !d.ctx.station.ready) return 3;
+    const b = d.ctx.boat, dist = d.ctx.station.berth.pos.distanceTo(_v.set(b.x, 0, b.z));
+    return dist < 750 ? 0 : dist < 1100 ? 1 : 2;
+  },
   pilotTarget(d) {
     const st = d.ctx.station;
     if (!st.ready || d.ctx.boat.moored || d.ctx.boat.docking) return null;
@@ -100,7 +108,7 @@ export const CH1 = {
     },
     {
       id: 'sail', checkpoint: true,
-      objective: ['Вахта: курс на «Северный»', 'Your watch: the course for Severny', '', 'Hold the course (the wheel on the bridge), or let the mate\'s autopilot steer. Watch the ice.'],
+      objective: ['Вахта: курс на «Северный»', 'Your watch: the course for Severny', '', 'The mate has the helm, picking a way through the ice. Keep a lookout from the bridge or the deck.'],
       enter(d) { this.t0 = d.t; },
       update(d) {
         const toSt = d.ctx.station.ready ? d.ctx.station.berth.pos.distanceTo(_v.set(d.ctx.boat.x, 0, d.ctx.boat.z)) : 9999;
@@ -231,15 +239,14 @@ export const CH1 = {
     },
     {
       id: 'approach', checkpoint: true,
-      objective: ['Подведите буксир к причалу', 'Bring her alongside', '', 'Slow ahead to the berth, bow to the west, starboard side to the ice. Or leave it to the captain.'],
+      objective: ['Подход к причалу', 'Coming alongside', '', 'The captain takes her in to the berth. Be on deck, or on the bridge.'],
       marker: (d) => d.ctx.station.ready ? d.ctx.station.berth.pos.clone().setY(3) : null,
       enter(d) { d.ctx.stations.slAim = null; d.lines(['c1_approach_1', 'c1_approach_2', 'c1_approach_3'], null, { delay: 2 }); this.t0 = d.t; },
       update(d) {
         const b = d.ctx.boat, berth = d.ctx.station.berth;
         const dist = berth.pos.distanceTo(_v.set(b.x, 0, b.z));
         // (not at the wheel, or too long about it: the captain brings her in)
-        if (!b.docking && !b.moored && dist < 460 && d.ctx.stations.at !== 'wheel' && d.t - this.t0 > 22) d.ctx.voyage.bringIn();
-        if (!b.docking && !b.moored && dist < 460 && d.t - this.t0 > 90) d.ctx.voyage.bringIn();
+        if (!b.docking && !b.moored && dist < 460) d.ctx.voyage.bringIn();
         return b.moored;
       },
     },

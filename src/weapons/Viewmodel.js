@@ -617,6 +617,7 @@ export class Viewmodel {
       this.armR?.use(gun ? gun.def.id : null); this.armL?.use(gun ? gun.def.id : null);
     }
     if ((this.lightScan -= dt) <= 0) { this.lightScan = 1; this.scanLights(); }
+    if (s.climb != null && s.up < 0.02) { this.climbHands(s.climb); return; }
     const show = (!!gun && s.up > 0.001) || s.armL;
     this.rig.visible = show;
     if (this.flashT > 0 && (this.flashT -= dt) <= 0 && this.gun) this.gun.flash.visible = false;
@@ -753,6 +754,32 @@ export class Viewmodel {
     _m3.identity();
     for (const o of prop.chain) { o.updateMatrix(); _m3.multiply(o.matrix); }
     return _m3;
+  }
+
+  // on a ladder (the gun put away): both fists on the rungs in front of you, one reaching up for the
+  // next as the other pulls down, half a cycle apart (ph: the climb's cycle, two rungs)
+  climbHands(ph) {
+    this.rig.visible = true;
+    if (this.gun) this.gun.root.visible = false;
+    this.rig.position.set(0, 0, 0); this.rig.quaternion.identity();
+    this.rig.updateMatrixWorld(true);
+    for (const [arm, side, off] of [[this.armR, 1, 0], [this.armL, -1, 0.5]]) {
+      if (!arm) continue;
+      arm.root.visible = true;
+      arm.use(null);
+      const u = (ph + off) % 1;
+      // holding (0..0.7): the rung goes down past you as you climb; reaching (0.7..1): up for the next
+      const hold = u < 0.7, k = hold ? u / 0.7 : (u - 0.7) / 0.3;
+      const y = hold ? 0.10 - 0.36 * k : -0.26 + 0.36 * smooth(k);
+      const z = -0.44 + (hold ? 0 : 0.07 * Math.sin(k * Math.PI));
+      arm.p.set(side * 0.125, y, z);
+      // the fist round a level rung (its hole along x), the back of the hand toward you
+      const yb = _v6.set(0, 0.3, 1).normalize(), xr = _v7.set(1, 0, 0);
+      const zf = _v5.crossVectors(xr, yb);
+      arm.q.setFromRotationMatrix(_m3.makeBasis(xr, yb, zf));
+      arm.bend(_v4.set(side * 0.26, -0.8, 0.0));
+      this.placeArm(arm);
+    }
   }
 
   // a hand between anchors a and b (w of the way), the forearm aimed at the elbow

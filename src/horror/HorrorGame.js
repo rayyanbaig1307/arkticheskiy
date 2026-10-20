@@ -85,6 +85,8 @@ export class HorrorGame {
     // the boat's ladderAt sees the levels' ladders too
     const orig = model.ladderAt.bind(model);
     model.ladderAt = (p) => orig(p) || this.ladders.find((l) => l.box.containsPoint(p)) || null;
+    this.ladderProxies = new Map();             // ladder -> its prompt's box (E: climb)
+    this.syncLadders();
   }
 
   // ---- space
@@ -174,13 +176,36 @@ export class HorrorGame {
     }
     this.ctx.crew?.nav?.reset?.();
     this.enemies?.groundChanged?.();
+    this.syncLadders();
+  }
+
+  // a prompt on each ladder (the boat's own and the levels' while she's moored): E gets you on it
+  syncLadders() {
+    const { boat, model, interactions, player } = this.ctx;
+    const all = new Set([...(model.ladders || []), ...this.ladders]);
+    for (const [l, m] of this.ladderProxies) if (!all.has(l)) { interactions.remove(m); m.removeFromParent(); this.ladderProxies.delete(l); }
+    for (const l of all) {
+      if (this.ladderProxies.has(l)) continue;
+      const size = l.box.getSize(new THREE.Vector3()), c = l.box.getCenter(new THREE.Vector3());
+      const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.3, size.x), size.y, Math.max(0.3, size.z)), new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide }));
+      m.position.copy(c);
+      boat.root.add(m);
+      interactions.add(m, {
+        hint: () => (player.climb ? '' : player.pos.y > c.y ? 'Спуститься по трапу · Climb down the ladder' : 'Подняться по трапу · Climb the ladder'),
+        use: () => { if (!player.climb && !player.station) player.mount(l); },
+        range: 2.2,
+      });
+      this.ladderProxies.set(l, m);
+    }
   }
 
   leaveLevel(L) {
-    const { model } = this.ctx;
+    const { model, player } = this.ctx;
     if (L.inBoat) { if (L.inBoat !== true) model.collision.removeExtra(L.inBoat); L.inBoat = null; }
     for (const d of L.doors) if (d.colEntry) { d.colEntry.on = false; d.colEntry = null; }
     this.ladders = this.ladders.filter((l) => l.level !== L);
+    if (player.climb?.l.level === L) player.dismount();
+    this.syncLadders();
     this.enemies?.groundChanged?.();
   }
 
@@ -304,11 +329,16 @@ export class HorrorGame {
     const params = sky.params || {};
     const outdoors = !this.indoor;
     const nearHeat = this.heat.reduce((m, h) => Math.max(m, h.k * Math.max(0, 1 - player.pos.distanceTo(h.pos) / h.r)), 0);
+    // aboard, the ship is heated while her engine runs: the rooms warm, the engine room hot (dead in
+    // the water, chapter 5, her heating is off too)
+    const pz = zone ? null : player.zone;
+    const shipHeat = !pz ? 0 : boat.engineOn ? (pz === 'engine' ? 0.75 : pz === 'engine_stair' ? 0.5 : 0.32) : 0.03;
     const env = {
       outdoors, blizzard: outdoors ? Math.min(1, Math.max(0, (params.fogDensity - 0.02) / 0.05)) * (params.snow ?? 0) : 0,
-      nearHeat: Math.max(nearHeat, zone ? 0 : (player.zone && player.zone !== 'engine_stair' ? 0.25 : 0)),
+      nearHeat: Math.max(nearHeat, shipHeat),
       running: !!player.running, crouching: !!player.crouched, flashlightOn: this.flashlight.on,
-      inWater: player.pos.y < -1, cold: zone?.ambience === 'cave' ? 1.4 : zone ? 0.6 : 1,
+      // (in the sea: below the waterline and not in one of her rooms; the engine room is below it too)
+      inWater: !pz && !zone && player.pos.y < -0.6, cold: zone?.ambience === 'cave' ? 1.4 : zone ? 0.6 : 1,
     };
     if (playing && !this.ctx.freecam) this.stats.update(dt, env);
     // the creatures (the ground they walk on changes when she moors or casts off)
@@ -318,10 +348,9 @@ export class HorrorGame {
     this.hud.update(dt, env);
     audio.horror?.setFear?.(this.stats.fear);
     this.flashlight.update(dt);
-    this.weapons.enabled = playing && !stations.at && !this.hiding && !this.journal.isOpen() && !this.stats.dead;
+    this.weapons.enabled = playing && !stations.at && !player.climb && !this.hiding && !this.journal.isOpen() && !this.stats.dead;
     if (playing) this.weapons.update(dt);
     this.gunLight(dt, worldEye);
-    void boat;
   }
 
   // the gun's reflections: aboard, the room's probe; elsewhere a neutral room, as bright as the

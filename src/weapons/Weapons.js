@@ -629,6 +629,7 @@ export class Weapons {
     vs.armR = !!this.cur && this.up > 0;
     vs.armL = vs.armR || this.act === this.throwAct;
     vs.restR = this.cur ? AN.gripR : AN.idleR; vs.restL = this.cur && !WEAPONS[this.cur]?.oneHand ? AN.gripL : AN.idleL;
+    vs.climb = P?.climb ? P.climb.ph : null;
     this.vm.update(dt, vs);
     if (this.flareHeld) this.flareSys.setHeld(this.flareHeld, this.vm.flareTipWorld(_p));
 

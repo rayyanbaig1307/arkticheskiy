@@ -42,9 +42,9 @@ npm run build
 | W A S D | walk |
 | Mouse | look |
 | Shift | run |
-| E | use what you look at: take the wheel, the throttle, the horn, the searchlight, the radar, doors, switches, the engine, the radio, the kettle, the towing winch's lever; talk to someone |
-| W / S on a ladder | climb up / down |
-| At the wheel | A / D steer, W / S change the engine order, H horn, E let go |
+| E | use what you look at: the horn, the searchlight, the radar, doors, switches, the engine, the radio, the kettle, the towing winch's lever, a ladder (to get on or off it); talk to someone |
+| W / S on a ladder | climb up / down (at the top you step off onto the deck; E lets go) |
+| At the searchlight | the mouse aims it, your view up on the roof beside the lamp; E lets go |
 | At the searchlight | the mouse aims it, E lets go |
 | Esc | pause (settings, voyage, time of day, volume) |
 | F3 | frame rate, GPU time and draw calls |
@@ -71,7 +71,7 @@ npm run build
 
 Nobody walks through anything: the crew's walks are routed round the furniture and the machinery.
 
-The boat is always under way. Nobody at the wheel means the autopilot steers round the big bergs.
+The boat is always under way and the mate has the helm: you don't steer her. He picks a way through the ice toward where the story is going, round the bergs, full ahead in the clear and slow near anything big.
 Ram one anyway and she shudders, crunches and loses her way; floes are shoved aside.
 
 ## Graphics settings

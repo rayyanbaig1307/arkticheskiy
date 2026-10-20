@@ -297,4 +297,6 @@ export class Director {
 
   // the course the autopilot steers (main.js's boat.pilot), when a chapter wants her sailing
   pilotTarget() { return CHAPTERS[this.chapter]?.pilotTarget?.(this) || null; }
+  // the fastest engine order the chapter wants now (null: any)
+  pilotCap() { return CHAPTERS[this.chapter]?.pilotCap?.(this) ?? null; }
 }

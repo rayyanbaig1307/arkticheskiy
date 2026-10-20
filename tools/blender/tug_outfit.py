@@ -7,10 +7,73 @@
 import math
 import importlib
 import bmesh
-from mathutils import Matrix
+from mathutils import Matrix, Vector
 import kit as K
 importlib.reload(K)
 from tug_layout import *
+
+def _crom(P, n=10):
+    """a smooth curve through the points (Catmull-Rom), n samples per span"""
+    out = []
+    for i in range(len(P) - 1):
+        p0, p1, p2, p3 = P[max(i - 1, 0)], P[i], P[i + 1], P[min(i + 2, len(P) - 1)]
+        for k in range(n):
+            t = k / n
+            t2, t3 = t * t, t * t * t
+            out.append(Vector(tuple(0.5 * ((2 * p1[j]) + (-p0[j] + p2[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t2
+                                         + (-p0[j] + 3 * p1[j] - 3 * p2[j] + p3[j]) * t3) for j in range(3))))
+    out.append(Vector(P[-1]))
+    return out
+
+def stud_link(part, c, t, nv, m, d, segs=16, rsegs=6):
+    """one stud link of round bar d: an oval 6d long and 3.6d wide, centred at c, long along t, in
+    the plane of t and nv, with its stud across the middle"""
+    bm = part.bm; mi = part.mi(m)
+    B = t.cross(nv).normalized()                # the link plane's normal
+    L, W, rb = 6.0 * d, 3.6 * d, d / 2
+    a, R = (L - W) / 2, (W - d) / 2
+    h = segs // 2
+    cl = []
+    for k in range(h):
+        ang = -math.pi / 2 + math.pi * k / h
+        cl.append((a + R * math.cos(ang), R * math.sin(ang)))
+    for k in range(h):
+        ang = math.pi / 2 + math.pi * k / h
+        cl.append((-a + R * math.cos(ang), R * math.sin(ang)))
+    P = [c + t * u + nv * v for u, v in cl]
+    n = len(P)
+    rings = []
+    for i in range(n):
+        T = (P[(i + 1) % n] - P[i - 1]).normalized()
+        N = B.cross(T).normalized()
+        rings.append([bm.verts.new(part.P(tuple(P[i] + (N * math.cos(2 * math.pi * k / rsegs) + B * math.sin(2 * math.pi * k / rsegs)) * rb))) for k in range(rsegs)])
+    for i in range(n):
+        j = (i + 1) % n
+        for k in range(rsegs):
+            k1 = (k + 1) % rsegs
+            f = bm.faces.new((rings[i][k], rings[i][k1], rings[j][k1], rings[j][k])); f.material_index = mi
+    # the stud
+    part.tube([tuple(c - nv * (R - rb * 0.6)), tuple(c + nv * (R - rb * 0.6))], rb * 0.75, m, 6)
+
+def stud_chain(part, pts, m, d=0.030):
+    """links along a run, a pitch apart (each through the next), turned a quarter turn in turn"""
+    curve = _crom(pts, 12)
+    lens = [0.0]
+    for i in range(1, len(curve)): lens.append(lens[-1] + (curve[i] - curve[i - 1]).length)
+    pitch = 4.0 * d
+    up = Vector((0, 0, 1))
+    s, i, k = pitch / 2, 1, 0
+    while s < lens[-1] - pitch / 2:
+        while lens[i] < s: i += 1
+        f = (s - lens[i - 1]) / max(1e-9, lens[i] - lens[i - 1])
+        c = curve[i - 1].lerp(curve[i], f)
+        t = (curve[i] - curve[i - 1]).normalized()
+        side = t.cross(up)
+        side = side.normalized() if side.length > 1e-4 else Vector((1, 0, 0))
+        flat = side                                    # a link lying flat (its plane level)
+        stand = t.cross(side).normalized()             # and the next standing up
+        stud_link(part, c, t, flat if k % 2 == 0 else stand, m, d)
+        s += pitch; k += 1
 
 def bollard(p, M, x, y, z, r=0.17):
     """a double bitt: two posts with caps on a base plate"""
@@ -229,18 +292,17 @@ def build(ctx):
         of.cyl(s * 1.48, w2, FC + 0.75, 0.29, 0.3, M['engine'], axis='X', segs=22, r2=0.22, bevel=0.02)
         of.cyl(s * 1.25, w2 + 0.65, FC + 1.25, 0.012, 0.3, M['steel'], segs=6)
         of.torus(s * 1.25, w2 + 0.65, FC + 1.4, 0.13, 0.012, M['red'], axis='Z', segs=16, rsegs=4)
-        # the chain from the gypsy forward and down the spurling pipe, through a stopper
+        # the chain: up from its pipe behind the gypsy, over it, down to the deck forward, over the
+        # stopper and down the spurling pipe at the bow
         tx = s * (half_breadth(17.6, 3.4) - 0.75)
-        n = 18
-        for k in range(n):
-            t = k / (n - 1)
-            px = gx + (tx - gx) * t; py = w2 + 0.42 + (17.3 - w2 - 0.42) * t
-            pz = FC + 0.38 - 0.16 * math.sin(t * math.pi) + (0.35 * (1 - t) ** 3)
-            if k % 2:
-                os_.torus(px, py, pz, 0.075, 0.022, M['black'], axis='X', segs=10, rsegs=5)
-            else:
-                os_.torus(px, py, pz, 0.075, 0.022, M['black'], axis='Z', segs=10, rsegs=5)
         sx, sy = gx + (tx - gx) * 0.6, w2 + 0.42 + (17.3 - w2 - 0.42) * 0.6
+        gr = 0.44
+        run = [(gx, w2 - 0.42, FC - 0.25), (gx, w2 - 0.38, FC + 0.30), (gx, w2 - 0.30, FC + 0.75 + gr * 0.72),
+               (gx, w2, FC + 0.75 + gr + 0.02), (gx, w2 + 0.30, FC + 0.75 + gr * 0.72), (gx, w2 + 0.55, FC + 0.42),
+               (gx + (sx - gx) * 0.45, w2 + 0.55 + (sy - w2 - 0.55) * 0.45, FC + 0.05),
+               (sx, sy - 0.3, FC + 0.12), (sx, sy, FC + 0.33), (sx + (tx - sx) * 0.4, sy + (17.3 - sy) * 0.4, FC + 0.14),
+               (tx, 17.3 - 0.25, FC + 0.06), (tx, 17.3, FC - 0.3)]
+        stud_chain(os_, run, M['black'], d=0.030)
         of.rbox(sx - 0.18, sy - 0.25, FC, sx + 0.18, sy + 0.25, FC + 0.3, M['dark'], r=0.03)
         of.cyl(tx, 17.3, FC + 0.05, 0.22, 0.1, M['dark'], segs=18, bevel=0.02)
     col.box(-1.7, w2 - 0.65, FC, 1.7, w2 + 0.65, FC + 1.2, M['col'])

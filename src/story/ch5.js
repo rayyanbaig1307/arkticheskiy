@@ -107,20 +107,26 @@ export const CH5 = {
     },
     {
       id: 'wheel', checkpoint: true,
-      objective: ['Мостик: штурвал', 'The bridge: the wheel', '', 'Something is standing at it.'],
+      objective: ['Мостик: штурвал', 'The bridge: the wheel', '', 'Something is standing at it. Then set her on the autopilot, south.'],
       marker: (d) => d.spot('wheel')?.add(new THREE.Vector3(0, 1.8, 0)),
       enter(d) {
         const w = d.ctx.model.spots.wheel;
         this.helmsman = w && d.h.enemies.spawn('turned_c', w.pos.clone().add(new THREE.Vector3(0, 0, 0.4)), { state: 'idle', name: 'helm_t', yaw: w.yaw });
         d.after(3, () => L(d, 'c5_aboard_5'));
+        // with it dead, the wheel sets her on the autopilot, south, and lets her go
+        const S = d.ctx.stations;
+        S.helmUse = {
+          hint: () => (!this.helmsman || this.helmsman.dead ? 'Автопилот: курс на юг · Set the autopilot, south' : 'У штурвала кто-то стоит · Something is standing at the wheel'),
+          use: () => { if (!this.helmsman || this.helmsman.dead) this.go = true; },
+        };
       },
       update(d) {
-        const dead = !this.helmsman || this.helmsman.dead;
         if (!this.said6 && d.inZone('bridge')) { this.said6 = true; L(d, 'c5_aboard_6'); }
-        if (dead && d.ctx.stations.at === 'wheel') {
+        if (this.go) {
+          d.ctx.stations.helmUse = null;
           d.set('free');
           d.ctx.voyage.castOff();
-          d.ctx.boat.setOrder(2);
+          d.ctx.boat.setOrder(3);
           return true;
         }
         return false;
@@ -128,7 +134,7 @@ export const CH5 = {
     },
     {
       id: 'out',
-      objective: ['Во льды, на юг', 'Out through the ice, south', '', 'To open water. Full ahead, and do not stop.'],
+      objective: ['Во льды, на юг', 'Out through the ice, south', '', 'The autopilot takes her south through the ice. Keep them off her.'],
       enter(d) { d.stinger('chase_end'); this.said = 0; },
       update(d) {
         const b = d.ctx.boat, berth = d.ctx.station.berth;

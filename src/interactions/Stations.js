@@ -22,6 +22,7 @@ import { NO_REFLECT } from '../world/Reflection.js';
 // scanner) are animated here every frame.
 
 const _v = new THREE.Vector3(), _w = new THREE.Vector3(), _q = new THREE.Quaternion();
+const EYE_H = 1.66;          // (the player's eye above their feet: Player.js EYE)
 const RADAR_RANGES = [0.5, 1, 2];
 
 export class Stations {
@@ -51,9 +52,16 @@ export class Stations {
   sfx(name, node, opts) { this.ctx.audio?.sfx?.(name, node ? node.getWorldPosition(new THREE.Vector3()) : null, opts); }
 
   // ------------------------------------------------------------ the helm
+  // the wheel is the mate's: you don't steer her (the story can put something of its own on it:
+  // helmUse = { hint, use })
   make_wheel(it, I) {
     this.wheel = { node: it.node, base: it.node.rotation.z };
-    I.add(it.node, { hint: () => 'Take the wheel', use: () => this.takeWheel(), range: 2.2 });
+    this.helmLocked = true; this.helmUse = null;
+    I.add(it.node, {
+      hint: () => (this.helmUse ? this.helmUse.hint() : this.helmLocked ? 'Штурвал у старпома · The mate has the helm' : 'Take the wheel'),
+      use: () => { if (this.helmUse) this.helmUse.use(); else if (!this.helmLocked) this.takeWheel(); },
+      range: 2.2,
+    });
   }
 
   takeWheel() {
@@ -70,6 +78,7 @@ export class Stations {
   leave() {
     const { player, boat } = this.ctx;
     if (this.at === 'wheel') { boat.autopilot = true; boat.helm = 0; this.emit('helm', false); }
+    if (this.at === 'searchlight' && this.slReturn) { player.pos.copy(this.slReturn.pos); player.vel.set(0, 0, 0); player.yaw = this.slReturn.yaw; }
     this.at = null; player.station = null;
     this.ctx.ui.station('');
   }
@@ -77,8 +86,8 @@ export class Stations {
   make_throttle(it, I) {
     this.throttle = { node: it.node, base: it.node.rotation.x, a: 0 };
     I.add(it.node, {
-      hint: () => { const b = this.boat; const n = (b.order + 1) % ORDERS.length; return `Engine order: ${ORDERS[b.order].name} → ${ORDERS[n].name}`; },
-      use: () => this.setOrder((this.boat.order + 1) % ORDERS.length),
+      hint: () => { const b = this.boat; if (this.helmLocked) return `Телеграф: ${ORDERS[b.order].ru} · Engine order: ${ORDERS[b.order].name} (the mate's)`; const n = (b.order + 1) % ORDERS.length; return `Engine order: ${ORDERS[b.order].name} → ${ORDERS[n].name}`; },
+      use: () => { if (!this.helmLocked) this.setOrder((this.boat.order + 1) % ORDERS.length); },
       range: 2.2,
     });
   }
@@ -146,10 +155,16 @@ export class Stations {
     const spot = this.model.spots.searchlight;
     this.at = 'searchlight';
     const st = this;
+    // your eye goes up beside the lamp on the roof, a little behind and above it, and turns with it,
+    // so you see what the beam sees (from the control inside, the consoles and the window frames
+    // were all there was); you're put back at the control when you let go
+    this.slReturn = { pos: spot.pos.clone(), yaw: spot.yaw };
+    const pivot = this.sl.yaw ? this.boat.toLocal(this.sl.yaw.getWorldPosition(new THREE.Vector3()), new THREE.Vector3()) : spot.pos.clone();
+    const eyeAt = (yaw, out) => out.set(Math.sin(yaw) * 0.7, 0.5 - EYE_H, Math.cos(yaw) * 0.7).add(pivot);
     player.station = {
-      pos: spot.pos, yaw: spot.yaw, yawRange: Math.PI, pitchUp: 0.5, pitchDown: 0.45, lookScale: 0.8,
-      onLook(dy, dp) { st.slYaw = clamp(st.slYaw + dy, -2.6, 2.6); st.slPitch = clamp(st.slPitch + dp, -0.45, 0.35); },
-      follow(p) { p.yaw = st.slYaw; p.pitch = st.slPitch; },
+      pos: eyeAt(this.slYaw, new THREE.Vector3()), yaw: 0, yawRange: Math.PI * 2, pitchUp: 0.5, pitchDown: 0.6, lookScale: 0.8,
+      onLook(dy, dp) { st.slYaw = clamp(st.slYaw + dy, -2.9, 2.9); st.slPitch = clamp(st.slPitch + dp, -0.45, 0.35); },
+      follow(p) { p.yaw = st.slYaw; p.pitch = st.slPitch; eyeAt(st.slYaw, this.pos); },
     };
     this.ctx.ui.toast('Searchlight: aim with the mouse, E to let go', 3.5);
   }
@@ -198,6 +213,15 @@ export class Stations {
     box.applyMatrix4(inv);
     box.expandByScalar(0.02);
     d.col = this.model.collision.addBox(box);
+    // a door to the open deck swings out and folds back flat against the outside of the house, as
+    // a ship's doors are hooked back (at 100 degrees it stood across the narrow wings and side
+    // decks, in your way and in your face); a door between two rooms swings away from you
+    const hinge = node.position, leaf = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), d.base);
+    const normal = new THREE.Vector3(-leaf.z, 0, leaf.x);
+    const mid = hinge.clone().addScaledVector(leaf, 0.45).setY(hinge.y + 1.0);
+    const room = (k) => this.model.zoneAt(mid.clone().addScaledVector(normal, k * 0.8));
+    const inA = room(1), inB = room(-1);
+    if (!inA !== !inB) { d.out = inA ? -1 : 1; d.max = 2.8; }     // (the side with no room is outside)
     this.doors.push(d);
     I.add(node, {
       hint: () => (d.locked ? 'Locked (crew cabin)' : d.want ? 'Close the door' : 'Open the door'),
@@ -215,7 +239,8 @@ export class Stations {
       const leaf = _w.set(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), d.base);
       const normal = new THREE.Vector3(-leaf.z, 0, leaf.x);       // the door's face normal (boat space)
       const side = Math.sign((p.x - hinge.x) * normal.x + (p.z - hinge.z) * normal.z) || 1;
-      d.sign = side;
+      // (out onto the deck, whichever side you open it from; else away from you)
+      d.sign = d.out ? -d.out : side;
       d.want = 1;
       this.sfx('door_open', d.node);
     } else {
@@ -327,7 +352,7 @@ export class Stations {
     }
     // doors swing
     for (const d of this.doors) {
-      d.a = damp(d.a, d.want * 1.75, 5, dt);
+      d.a = damp(d.a, d.want * (d.max || 1.75), 5, dt);
       d.node.rotation.y = d.base + d.a * d.sign;
       d.col.on = d.a < 0.35;
     }

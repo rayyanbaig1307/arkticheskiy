@@ -134,7 +134,10 @@ def build(ctx):
         er.box(s * EX, EY0, zb, s * (EX + 0.1), EY1, CEIL + 0.05, M['erwall'])
     er.box(-EX, EY0 - 0.1, zb, EX, EY0, CEIL + 0.05, M['erwall'])
     er.box(-EX, EY1, zb, EX, EY1 + 0.1, CEIL + 0.05, M['erwall'])
-    er.box(-EX, EY0, CEIL, EX, EY1, CEIL + 0.05, M['in_lgrey'])
+    er.box(-EX, EY0, CEIL, sd['x0'], EY1, CEIL + 0.05, M['in_lgrey'])
+    er.box(sd['x1'], EY0, CEIL, EX, EY1, CEIL + 0.05, M['in_lgrey'])
+    er.box(sd['x0'], EY0, CEIL, sd['x1'], sd['y0'], CEIL + 0.05, M['in_lgrey'])
+    er.box(sd['x0'], sd['y1'], CEIL, sd['x1'], EY1, CEIL + 0.05, M['in_lgrey'])
     # frames on the sides every 0.6 m (a deep web every 3 m), a stringer; beams under the deckhead
     for s in (1, -1):
         for k, yy in enumerate([EY0 + 0.3 + i * 0.6 for i in range(int((EY1 - EY0 - 0.3) / 0.6))]):
@@ -144,7 +147,12 @@ def build(ctx):
             if web: er.box(s * EX - s * (d + 0.08) if s > 0 else -EX + d, yy - 0.06, zb, s * EX - s * d if s > 0 else -EX + d + 0.08, yy + 0.06, CEIL, M['erwall'])
         er.box(s * EX - s * 0.2 if s > 0 else -EX, EY0, zb + 2.05, s * EX if s > 0 else -EX + 0.2, EY1, zb + 2.09, M['erwall'])
     for yy in [EY0 + 0.3 + i * 0.6 for i in range(int((EY1 - EY0 - 0.3) / 0.6))]:
-        er.box(-EX, yy - 0.03, CEIL - 0.16, EX, yy + 0.03, CEIL, M['in_lgrey'])
+        if sd['y0'] - 0.03 < yy < sd['y1'] + 0.03:
+            # (the beams stop at the stair's opening)
+            er.box(-EX, yy - 0.03, CEIL - 0.16, sd['x0'], yy + 0.03, CEIL, M['in_lgrey'])
+            er.box(sd['x1'], yy - 0.03, CEIL - 0.16, EX, yy + 0.03, CEIL, M['in_lgrey'])
+        else:
+            er.box(-EX, yy - 0.03, CEIL - 0.16, EX, yy + 0.03, CEIL, M['in_lgrey'])
     col.box(-EX - 0.1, EY0, zb - 0.2, EX + 0.1, EY1, zb, M['col'])
     for s in (1, -1):
         col.box(s * (EX - 0.15) if s > 0 else -EX - 0.2, EY0, zb, s * (EX + 0.2) if s > 0 else -EX + 0.15, EY1, DECK, M['col'])
@@ -239,8 +247,8 @@ def build(ctx):
             K.pipe(pp, [(xw, yy, zb + 0.25), (xw - s * 0.4, yy, zb + 0.25), (s * 3.05, yy, zb + 0.25), (s * 3.05, yy, zb + 0.6)], 0.05, M['in_green'], flange_m=M['in_green'], flanges=(3,))
     # the vent trunk along the starboard deckhead, its outlets; cable trays both sides
     vt = 0.42
-    er.box(EX - 0.35 - vt, -10.6, CEIL - 0.42, EX - 0.35, 6.0, CEIL - 0.02, M['in_lgrey'], bevel=0.01)
-    for yy in (-9.5, -6.0, -2.5, 1.5, 4.5):
+    er.box(EX - 0.35 - vt, -10.6, CEIL - 0.42, EX - 0.35, sd['y0'] - 0.15, CEIL - 0.02, M['in_lgrey'], bevel=0.01)
+    for yy in (-9.5, -6.0, -2.5):
         with er.at(EX - 0.35 - vt / 2, yy, CEIL - 0.42, rx=-math.pi / 2):
             K.grille(er, -0.18, 0.18, -0.12, 0.12, M['in_dark'], depth=0.01)
     for s in (1, -1):
