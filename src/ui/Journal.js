@@ -5,8 +5,8 @@ import { CHAPTERS } from './HorrorHUD.js';
 //
 // - Items: what you carry, as a grid of icons (weapons and loose rounds first), with the chosen
 //   one described on the right; medkits, bandages, batteries, tea and vodka can be used from here.
-// - Documents: everything read so far, by chapter. The reader shows the Russian text, with a
-//   toggle (or T) to the English translation, laid out as what it is: a lined journal page,
+// - Documents: everything read so far, by chapter. The reader shows the English, with a toggle
+//   (or T) to the Russian original, laid out as what it is: a lined journal page,
 //   a torn note, a telex strip, a typed report, a tape transcript, a poster, a photograph.
 // - Objective: the chapter, what to do now, and what has been done.
 //
@@ -39,7 +39,7 @@ const STAND_IN = {
 };
 
 const TABS = ['items', 'docs', 'objective'];
-const LANG_KEY = 'arkticheskiy.journal.lang';
+const LANG_KEY = 'arkticheskiy.journal.lang2';
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 // plain text to paragraphs: blank lines split them, single newlines stay as line breaks
 const paras = (text) => (Array.isArray(text) ? text : String(text || '').split(/\n\s*\n/))
@@ -61,7 +61,7 @@ export class Journal {
     this.tab = 'items';
     this.item = null; this.docId = null;
     this.unread = new Set();
-    try { this.en = localStorage.getItem(LANG_KEY) === 'en'; } catch { this.en = false; }
+    try { this.en = localStorage.getItem(LANG_KEY) !== 'ru'; } catch { this.en = true; }
     this._open = false;
     this._build();
     ui?.addOverlay?.(() => this._open);
@@ -125,20 +125,20 @@ export class Journal {
 
   // ---------------------------------------------------------------- building
   _build() {
-    const tab = (id, ru, en) => `<button class="jr-tab" data-tab="${id}"><b>${ru}</b><span>${en}</span><i class="dot"></i></button>`;
+    const tab = (id, label) => `<button class="jr-tab" data-tab="${id}"><b>${label}</b><i class="dot"></i></button>`;
     this.el = document.createElement('div');
     this.el.id = 'journal';
     this.el.className = 'hidden';
     this.el.innerHTML = `<div class="jr-frame">
       <header class="jr-head">
-        <div class="jr-brand"><b>Журнал</b><span>Journal</span></div>
-        <nav class="jr-tabs">${tab('items', 'Вещи', 'Items')}${tab('docs', 'Документы', 'Documents')}${tab('objective', 'Задача', 'Objective')}</nav>
+        <div class="jr-brand"><b>Journal</b></div>
+        <nav class="jr-tabs">${tab('items', 'Items')}${tab('docs', 'Documents')}${tab('objective', 'Objective')}</nav>
         <button class="jr-x" title="Close (Tab)">✕</button>
       </header>
       <section class="jr-page" data-page="items"><div class="jr-left"><div class="jr-vitals"></div><div class="jr-grid"></div></div><aside class="jr-detail"></aside></section>
       <section class="jr-page" data-page="docs"><div class="jr-list"></div><div class="jr-reader"></div></section>
       <section class="jr-page" data-page="objective"><div class="jr-obj"></div></section>
-      <footer class="jr-foot"><span><b>1 2 3</b> pages</span><span><b>T</b> translation</span><span><b>Tab</b> / <b>Esc</b> close</span></footer>
+      <footer class="jr-foot"><span><b>1 2 3</b> pages</span><span><b>T</b> Russian original</span><span><b>Tab</b> / <b>Esc</b> close</span></footer>
     </div>`;
     document.body.appendChild(this.el);
     const q = (s) => this.el.querySelector(s);
@@ -202,19 +202,19 @@ export class Journal {
   _renderItems() {
     const inv = this.inventory, s = this.stats, P = this.parts;
     if (s) {
-      const v = (ru, en, val, unit = '') => `<div class="v"><b>${ru}</b><span>${en}</span><i style="--v:${Math.max(0, Math.min(1, val / 100)).toFixed(3)}"></i><em>${Math.round(val)}${unit}</em></div>`;
-      P.vitals.innerHTML = v('Здоровье', 'health', s.health) + v('Тепло', 'warmth', s.warmth) + v('Фонарь', 'battery', s.battery, '%');
+      const v = (label, val, unit = '') => `<div class="v"><b>${label}</b><i style="--v:${Math.max(0, Math.min(1, val / 100)).toFixed(3)}"></i><em>${Math.round(val)}${unit}</em></div>`;
+      P.vitals.innerHTML = v('Health', s.health) + v('Warmth', s.warmth) + v('Battery', s.battery, '%');
     }
     const cells = [];
     const cell = (key, icon, label, count, wide) =>
       `<button class="jr-cell${wide ? ' wide' : ''}${this.item === key ? ' sel' : ''}" data-item="${esc(key)}">${icon}${count != null ? `<em>${count}</em>` : ''}<span>${esc(label)}</span></button>`;
     if (inv) {
-      for (const w of Object.keys(WEAPONS)) if (inv.hasWeapon(w)) cells.push(cell(`w:${w}`, ICONS[w], WEAPONS[w].name.ru, null, true));
+      for (const w of Object.keys(WEAPONS)) if (inv.hasWeapon(w)) cells.push(cell(`w:${w}`, ICONS[w], WEAPONS[w].name.en, null, true));
       const ammoIcon = { '9x18': 'ammo_9x18', '7.62x54R': 'ammo_762x54', '7.62x39': 'ammo_762x39', flare: 'ammo_flare' };
-      for (const [type, n] of Object.entries(inv.ammo)) if (n > 0) cells.push(cell(`a:${type}`, ICONS[ammoIcon[type]] || ICONS.parcel, AMMO[type]?.ru || type, n));
-      for (const [id, n] of inv.list()) { const d = itemDef(id); cells.push(cell(id, d.iconSvg, d.name.ru, n > 1 ? n : null)); }
+      for (const [type, n] of Object.entries(inv.ammo)) if (n > 0) cells.push(cell(`a:${type}`, ICONS[ammoIcon[type]] || ICONS.parcel, AMMO[type]?.en || type, n));
+      for (const [id, n] of inv.list()) { const d = itemDef(id); cells.push(cell(id, d.iconSvg, d.name.en, n > 1 ? n : null)); }
     }
-    P.grid.innerHTML = cells.length ? cells.join('') : '<div class="jr-empty"><b>Карманы пусты</b><span>Your pockets are empty</span></div>';
+    P.grid.innerHTML = cells.length ? cells.join('') : '<div class="jr-empty"><b>Your pockets are empty</b></div>';
     // keep a choice that still exists, else the first thing in the pockets
     const keys = [...P.grid.querySelectorAll('[data-item]')].map((b) => b.dataset.item);
     if (!keys.includes(this.item)) {
@@ -228,27 +228,26 @@ export class Journal {
     const inv = this.inventory;
     if (key.startsWith('w:')) {
       const id = key.slice(2), w = WEAPONS[id];
-      return `<div class="big wide">${ICONS[id]}</div><h2>${esc(w.name.ru)}</h2><h3>${esc(w.name.en)}</h3>
-        <p>${esc(w.desc.ru)}</p><p class="en">${esc(w.desc.en)}</p>
-        <div class="meta">${esc(AMMO[w.ammo]?.ru)} · в карманах <b>${inv.ammo[w.ammo] || 0}</b> <span>in the pockets</span></div>`;
+      return `<div class="big wide">${ICONS[id]}</div><h2>${esc(w.name.en)}</h2>
+        <p>${esc(w.desc.en)}</p>
+        <div class="meta">${esc(AMMO[w.ammo]?.en)} · <b>${inv.ammo[w.ammo] || 0}</b> in your pockets</div>`;
     }
     if (key.startsWith('a:')) {
       const type = key.slice(2);
       const item = Object.keys(WEAPONS).find((w) => WEAPONS[w].ammo === type);
       return `<div class="big">${ICONS[{ '9x18': 'ammo_9x18', '7.62x54R': 'ammo_762x54', '7.62x39': 'ammo_762x39', flare: 'ammo_flare' }[type]] || ''}</div>
-        <h2>${esc(AMMO[type]?.ru || type)}</h2><h3>${esc(AMMO[type]?.en || type)}</h3>
-        <p>${inv.ammo[type]} шт. россыпью.${item ? ` Для: ${esc(WEAPONS[item].name.ru)}.` : ''}</p>
-        <p class="en">${inv.ammo[type]} loose rounds.${item ? ` For the ${esc(WEAPONS[item].name.en)}.` : ''}</p>`;
+        <h2>${esc(AMMO[type]?.en || type)}</h2>
+        <p>${inv.ammo[type]} loose rounds.${item ? ` For the ${esc(WEAPONS[item].name.en)}.` : ''}</p>`;
     }
     const d = itemDef(key);
     const n = inv?.count(key) || 0;
     let use = '';
     if (d.use || d.kind === 'flare') {
       const c = canUse(key, { stats: this.stats, inventory: inv });
-      use = `<button class="jr-use" data-use="${esc(key)}"${c.ok ? '' : ' disabled'}><b>Использовать</b><span>Use</span></button>${c.why ? `<div class="why"><b>${esc(c.why.ru)}</b> · ${esc(c.why.en)}</div>` : ''}`;
+      use = `<button class="jr-use" data-use="${esc(key)}"${c.ok ? '' : ' disabled'}><b>Use</b></button>${c.why ? `<div class="why">${esc(c.why.en)}</div>` : ''}`;
     }
-    return `<div class="big">${d.iconSvg}</div><h2>${esc(d.name.ru)}${n > 1 ? ` <em>×${n}</em>` : ''}</h2><h3>${esc(d.name.en)}</h3>
-      <p>${esc(d.desc.ru)}</p><p class="en">${esc(d.desc.en)}</p>${use}`;
+    return `<div class="big">${d.iconSvg}</div><h2>${esc(d.name.en)}${n > 1 ? ` <em>×${n}</em>` : ''}</h2>
+      <p>${esc(d.desc.en)}</p>${use}`;
   }
 
   _renderDocs() {
@@ -262,17 +261,17 @@ export class Journal {
       groups.get(ch).push(id);
     }
     if (!ids.length) {
-      P.list.innerHTML = '<div class="jr-empty"><b>Ничего не прочитано</b><span>Nothing read yet</span></div>';
+      P.list.innerHTML = '<div class="jr-empty"><b>Nothing read yet</b></div>';
       P.reader.innerHTML = '';
       return;
     }
     if (!ids.includes(this.docId)) this.docId = ids[ids.length - 1];
     P.list.innerHTML = [...groups.keys()].sort((a, b) => a - b).map((ch) => {
       const c = CHAPTERS[ch];
-      const head = c ? `<h4><b>${esc(c.nth[0])}</b> · ${esc(c.ru)}<span>${esc(c.en)}</span></h4>` : '<h4><b>Прочее</b><span>Other</span></h4>';
+      const head = c ? `<h4><b>${esc(c.nth[1])}</b> · ${esc(c.en)}</h4>` : '<h4><b>Other</b></h4>';
       return head + groups.get(ch).map((id) => {
         const d = this.docs[id] || { kind: 'note', title: { ru: id, en: id } };
-        return `<button class="jr-doc${id === this.docId ? ' sel' : ''}${this.unread.has(id) ? ' new' : ''}" data-doc="${esc(id)}">${docIcon(d.kind)}<b>${esc(d.title?.ru)}</b><span>${esc(d.title?.en)}</span></button>`;
+        return `<button class="jr-doc${id === this.docId ? ' sel' : ''}${this.unread.has(id) ? ' new' : ''}" data-doc="${esc(id)}">${docIcon(d.kind)}<b>${esc(d.title?.en || d.title?.ru)}</b></button>`;
       }).join('');
     }).join('');
     this.unread.delete(this.docId); this._badge();
@@ -292,7 +291,7 @@ export class Journal {
       telex: `<div class="strip">${this.en ? 'TELEX' : 'ТЕЛЕГРАММА'}${meta ? ` · ${meta}` : ''}</div>`,
       tape: `<div class="label">${this.en ? 'Transcript of a tape recording' : 'Расшифровка магнитофонной записи'}</div>`,
     }[kind] || '';
-    R.innerHTML = `<div class="jr-lang"><button data-lang="ru" class="${this.en ? '' : 'on'}">Русский</button><button data-lang="en" class="${this.en ? 'on' : ''}">English</button></div>
+    R.innerHTML = `<div class="jr-lang"><button data-lang="en" class="${this.en ? 'on' : ''}">English</button><button data-lang="ru" class="${this.en ? '' : 'on'}">Russian original</button></div>
       <article class="paper kind-${esc(kind)}">${head}
         ${secret ? `<div class="stamp">${esc(d.stamp?.[L] || d.stamp || (this.en ? 'TOP SECRET' : 'СОВ. СЕКРЕТНО'))}</div>` : ''}
         ${kind === 'photo' ? `<div class="pic">${d.image ? `<img src="${esc(d.image)}" alt="">` : ICONS.photo}</div>` : ''}
@@ -312,9 +311,9 @@ export class Journal {
       if (t && panel && !panel.classList.contains('hidden')) o = { title: t, text: document.getElementById('objtext')?.textContent || '' };
     }
     const c = CHAPTERS[this.chapter];
-    this.parts.obj.innerHTML = `${c ? `<div class="ch"><b>${esc(c.nth[0])} · ${esc(c.ru)}</b><span>${esc(c.nth[1])}: ${esc(c.en)}</span></div>` : ''}
-      <div class="now"><div class="tag"><b>Задача</b><span>Objective</span></div>
-      ${o ? `<h2>${esc(o.title)}</h2>${o.ru ? `<div class="ru">${esc(o.ru)}</div>` : ''}<p>${esc(o.text)}</p>` : '<p class="none">Нет задачи · Nothing to do but survive.</p>'}</div>
-      ${this.done.length ? `<div class="done"><div class="tag"><b>Сделано</b><span>Done</span></div>${this.done.map((d) => `<div class="d">${esc(d.title)}</div>`).join('')}</div>` : ''}`;
+    this.parts.obj.innerHTML = `${c ? `<div class="ch"><b>${esc(c.nth[1])}: ${esc(c.en)}</b></div>` : ''}
+      <div class="now"><div class="tag"><b>Objective</b></div>
+      ${o ? `<h2>${esc(o.title)}</h2><p>${esc(o.text)}</p>` : '<p class="none">Nothing to do but survive.</p>'}</div>
+      ${this.done.length ? `<div class="done"><div class="tag"><b>Done</b></div>${this.done.map((d) => `<div class="d">${esc(d.title)}</div>`).join('')}</div>` : ''}`;
   }
 }

@@ -156,7 +156,7 @@ export const CH3 = {
         if (!this.go && Math.hypot(p.x - top.x, p.z - top.z) < 0.9 && p.y < top.y - 1.0) {
           this.go = true;
           d.fade(1.4, () => {
-            d.ctx.ui.toast('Вниз. Сорок метров. · Down. Forty metres.', 4);
+            d.ctx.ui.toast('Down. Forty metres.', 4);
             const s = d.point('bunker', 'SPOT', 'bunker_arrive');
             if (s) d.teleport(s.clone().add(new THREE.Vector3(0, 0.1, 0)), d.ctx.player.yaw);
             this.done = true;

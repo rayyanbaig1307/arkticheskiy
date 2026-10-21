@@ -48,7 +48,10 @@ export class Interactions {
     this.lookDist = best ? best.distance : 60;
     const t = best && best.object.userData.target;
     this.current = t && t.enabled && best.distance <= t.range ? t : null;
-    this.ui.hint(this.current ? this.current.hint() : '');
+    // (nothing under the crosshair: what you're standing at may offer itself, a ladder)
+    const near = !this.current && this.fallback ? this.fallback() : null;
+    this.ui.hint(this.current ? this.current.hint() : near ? near.hint : '');
     if (this.current && this.input.hit('KeyE')) this.current.use();
+    else if (near && this.input.hit('KeyE')) near.use();
   }
 }

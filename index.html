@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Арктический</title>
+  <title>Arkticheskiy</title>
   <link rel="stylesheet" href="./src/ui/styles.css" />
 </head>
 <body>
@@ -14,7 +14,7 @@
     <div id="crosshair"></div>
     <div id="hint"></div>
     <div id="station"></div>
-    <div id="subs"><div class="ru"></div><div class="en"></div></div>
+    <div id="subs"><div class="line one"></div><div class="line two"></div></div>
     <div id="toast"></div>
     <div id="objective" class="hidden"><div id="objtitle"></div><div id="objtext"></div><div id="objdist"></div></div>
     <div id="marker" class="hidden"><div class="pip"></div><div id="mlabel"></div></div>
@@ -22,75 +22,92 @@
   </div>
 
   <div id="loading">
-    <div class="title">АРКТИЧЕСКИЙ</div>
-    <div class="bar"><div id="loadfill"></div></div>
-    <div id="loadtext">Loading</div>
+    <div class="ld-inner">
+      <div class="ld-eyebrow">An Arctic survival horror</div>
+      <div class="ld-title">Arkticheskiy</div>
+      <div class="bar"><div id="loadfill"></div></div>
+      <div id="loadtext">Loading</div>
+    </div>
   </div>
 
   <!-- the title screen, and the pause menu once play has begun -->
   <div id="menu" class="hidden title">
-    <div class="panel">
-      <div class="brand">
-        <div class="title">АРКТИЧЕСКИЙ</div>
-        <div class="rule"></div>
-        <div class="subtitle"><b>Остров Северный · полярная ночь</b><span>Survival horror on Severny Island, in the polar night</span></div>
-        <div class="paused-tag pause-only">Пауза <span>Paused</span></div>
+    <div class="mn-vignette"></div>
+    <div class="mn-grain"></div>
+
+    <section class="mn-main">
+      <div class="mn-eyebrow title-only">An Arctic survival horror</div>
+      <div class="mn-eyebrow pause-only">Paused</div>
+      <h1 class="mn-title">Arkticheskiy</h1>
+      <div class="mn-rule"></div>
+      <p class="mn-hook title-only">Station Severny went silent eight days ago.<br />The <i>Polyarnik</i> is the only ship in the ice.</p>
+
+      <nav class="mn-list">
+        <button id="continue" class="mn-item title-only hidden"><span>Continue</span><small></small></button>
+        <button id="newgame" class="mn-item title-only"><span>New Game</span><small></small></button>
+        <button id="play" class="mn-item pause-only"><span>Resume</span><small></small></button>
+        <button id="checkpoint" class="mn-item pause-only hidden"><span>Last Checkpoint</span><small></small></button>
+        <button class="mn-item" data-panel="settings"><span>Settings</span><small></small></button>
+        <button class="mn-item" data-panel="controls"><span>Controls</span><small></small></button>
+        <button id="quit" class="mn-item pause-only"><span>Quit to Title</span><small></small></button>
+      </nav>
+
+      <div class="mn-foot">Best played with headphones, in the dark. Sound starts when you click.</div>
+    </section>
+
+    <!-- settings -->
+    <section class="mn-panel" data-panel="settings">
+      <header><h2>Settings</h2><button class="mn-close" aria-label="Close">×</button></header>
+      <div class="mn-rows">
+        <div class="mn-row"><span class="mn-lbl">Graphics</span>
+          <div class="mn-seg" id="quality"><button data-v="low">Low</button><button data-v="medium">Medium</button><button data-v="high">High</button></div></div>
+        <div class="mn-row"><span class="mn-lbl">Volume</span>
+          <div class="mn-slide"><input id="volume" type="range" min="0" max="1" step="0.01" /><output id="volumeOut"></output></div></div>
+        <div class="mn-row"><span class="mn-lbl">Music</span>
+          <div class="mn-seg" id="music"><button data-v="on">On</button><button data-v="off">Off</button></div></div>
+        <div class="mn-row"><span class="mn-lbl">Mouse sensitivity</span>
+          <div class="mn-slide"><input id="sens" type="range" min="0.3" max="2.5" step="0.05" /><output id="sensOut"></output></div></div>
+        <div class="mn-sep">Language</div>
+        <div class="mn-row"><span class="mn-lbl">Voices</span>
+          <div class="mn-seg" id="vlang"><button data-v="en">English</button><button data-v="ru">Russian</button></div></div>
+        <div class="mn-row"><span class="mn-lbl">Subtitles</span>
+          <div class="mn-seg" id="slang"><button data-v="en">English</button><button data-v="ru">Russian</button><button data-v="both">Both</button><button data-v="off">Off</button></div></div>
+        <div id="qnote" class="mn-note"></div>
       </div>
-      <div class="actions">
-        <button id="newgame" class="primary title-only"><span>Новая игра</span><small>New game</small></button>
-        <button id="continue" class="title-only hidden"><span>Продолжить</span><small>Continue</small></button>
-        <button id="play" class="primary pause-only"><span>Вернуться</span><small>Resume</small></button>
-        <button id="checkpoint" class="pause-only hidden"><span>К последней точке</span><small>Back to the last checkpoint</small></button>
-        <button id="quit" class="pause-only"><span>В главное меню</span><small>Quit to the title</small></button>
+    </section>
+
+    <!-- controls -->
+    <section class="mn-panel" data-panel="controls">
+      <header><h2>Controls</h2><button class="mn-close" aria-label="Close">×</button></header>
+      <div class="mn-keys">
+        <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></div><span>Move</span>
+        <div><kbd>Shift</kbd></div><span>Run</span>
+        <div><kbd>C</kbd></div><span>Crouch: quieter, lower</span>
+        <div><kbd>E</kbd></div><span>Use, pick up, climb, hide in a locker</span>
+        <div><kbd>F</kbd></div><span>Flashlight</span>
+        <div><kbd>Left mouse</kbd></div><span>Fire</span>
+        <div><kbd>Right mouse</kbd></div><span>Aim</span>
+        <div><kbd>R</kbd></div><span>Reload</span>
+        <div><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd></div><span>Makarov, Mosin, AKM, flare pistol</span>
+        <div><kbd>Wheel</kbd></div><span>Next weapon</span>
+        <div><kbd>Q</kbd></div><span>Holster</span>
+        <div><kbd>G</kbd></div><span>Light and throw a hand flare</span>
+        <div><kbd>H</kbd></div><span>Use a medkit</span>
+        <div><kbd>Tab</kbd></div><span>Journal: items, documents, objective</span>
+        <div><kbd>F3</kbd></div><span>Frame rate</span>
+        <div><kbd>Esc</kbd></div><span>Pause</span>
       </div>
-      <div class="cols">
-        <div class="settings">
-          <label>Graphics
-            <select id="quality">
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
-          </label>
-          <label>Volume <input id="volume" type="range" min="0" max="1" step="0.01" /></label>
-          <label class="check"><input id="music" type="checkbox" /> Music</label>
-          <label>Voices
-            <select id="vlang">
-              <option value="ru">Русский (English subtitles)</option>
-              <option value="en">English</option>
-            </select>
-          </label>
-          <label>Mouse sensitivity <input id="sens" type="range" min="0.3" max="2.5" step="0.05" /></label>
-          <div id="qnote" class="note"></div>
-        </div>
-        <div class="controls">
-          <b>W A S D</b><span>walk</span>
-          <b>Shift</b><span>run</span>
-          <b>C</b><span>crouch: quieter, lower</span>
-          <b>E</b><span>use, pick up, hide in a locker</span>
-          <b>F</b><span>flashlight</span>
-          <b>Left mouse</b><span>fire</span>
-          <b>Right mouse</b><span>aim</span>
-          <b>R</b><span>reload</span>
-          <b>1 2 3 4</b><span>Makarov, Mosin, AKM, flare pistol</span>
-          <b>Wheel</b><span>next weapon</span>
-          <b>Q</b><span>holster</span>
-          <b>G</b><span>light and throw a hand flare</span>
-          <b>H</b><span>use a medkit</span>
-          <b>Tab</b><span>journal: items, documents, objective</span>
-          <b>Esc</b><span>pause</span>
-        </div>
-      </div>
-      <div class="foot">Headphones, and the lights off. Sound starts when you click.</div>
-    </div>
+    </section>
   </div>
 
   <div id="endcard" class="hidden">
-    <div class="panel">
-      <div class="title">«СЕВЕРНЫЙ»</div>
-      <div class="subtitle">The Polyarnik made it through the ice</div>
-      <p>The winter's flour, fuel and mail are ashore at Station Severny, and the station chief has the kettle on. The night is yours: walk the ice, visit the huts and the radio mast, or go back aboard, take the wheel and give her an engine order to cast off.</p>
-      <button id="endstay" class="primary">Keep exploring</button>
+    <div class="ec-inner">
+      <div class="mn-eyebrow">Open water</div>
+      <h1 class="mn-title">Arkticheskiy</h1>
+      <div class="mn-rule"></div>
+      <p>The ice is behind her. The radio is still calling her name, in a voice that sounds like everyone you left at Severny.</p>
+      <p class="ec-thanks">Thank you for playing.</p>
+      <button id="endstay" class="mn-item"><span>Keep sailing</span><small></small></button>
     </div>
   </div>
 

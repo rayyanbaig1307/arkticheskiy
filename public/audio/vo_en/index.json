@@ -1,27 +1,9 @@
 {
- "story_c1_dikson_1": {
-  "file": "story_c1_dikson_1.mp3",
-  "who": "radio",
-  "ru": "«Полярник», я Диксон-радио. «Северный» на связь не выходит. Следуйте по назначению, докладывайте каждые сутки.",
-  "en": "Polyarnik, this is Dikson Radio. Severny is still not answering. Proceed as ordered and report every twenty-four hours.",
-  "lang": "en",
-  "voice": "onwK4e9ZLuTAKqWW03F9",
-  "model": "eleven_v4"
- },
  "story_c1_brief_1": {
   "file": "story_c1_brief_1.mp3",
   "who": "captain",
   "ru": "Второй, зайди. Слушай внимательно, повторять не буду.",
   "en": "Second, come in. Listen carefully, I won't say it twice.",
-  "lang": "en",
-  "voice": "pM78bgjPVk0JXtaEnFoj",
-  "model": "eleven_v4"
- },
- "story_c1_brief_2": {
-  "file": "story_c1_brief_2.mp3",
-  "who": "captain",
-  "ru": "«Северный» молчит восьмые сутки. Ни сводок, ни ответа на вызовы.",
-  "en": "Severny has been silent for eight days. No weather reports, no answer to our calls.",
   "lang": "en",
   "voice": "pM78bgjPVk0JXtaEnFoj",
   "model": "eleven_v4"

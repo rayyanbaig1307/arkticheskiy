@@ -63,7 +63,7 @@ export const CH2 = {
       id: 'ashore',
       objective: ['Сойдите на берег', 'Go ashore', '', 'The gangway: starboard side, on the aft deck just behind the deckhouse.'],
       marker: (d) => d.st(8.75, 2.0, 2.2),
-      enter(d) { d.after(2, () => d.ctx.ui.toast('Холод: держитесь у печей и в домах · The cold: keep near stoves, indoors', 7)); },
+      enter(d) { d.after(2, () => d.ctx.ui.toast('The cold: keep near stoves, and indoors', 7)); },
       update(d) { if (d.ashore()) { L(d, 'c2_ashore_1'); return true; } return false; },
     },
     {

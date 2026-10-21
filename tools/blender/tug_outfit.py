@@ -325,6 +325,10 @@ def build(ctx):
     for s in (1, -1):
         door_lamp(of, M, s * (x + T / 2), 0.95, DECK + 2.25, '+x' if s > 0 else '-x')
     door_lamp(of, M, -(L2['x'] + T / 2), 5.95, L01 + 2.25, '-x')
+    # (the bridge's: beside each wing door, over the aft door)
+    for s in (1, -1):
+        door_lamp(of, M, s * (BR['x'] + T / 2), 4.55, L02 + 2.25, '+x' if s > 0 else '-x')
+    door_lamp(of, M, 0.6, BR['y0'] - T / 2, L02 + 2.25, '-y')
     hose_box(of, M, 3.85, y0 - T / 2, DECK + 0.45, '-y')
     hose_box(of, M, -(x + T / 2), -3.8, DECK + 0.45, '-x')
     for s in (1, -1):

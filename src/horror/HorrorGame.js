@@ -180,23 +180,39 @@ export class HorrorGame {
   }
 
   // a prompt on each ladder (the boat's own and the levels' while she's moored): E gets you on it
+  // (the ladders offer themselves through Interactions.fallback: an invisible box on each, as they
+  // had, stood in front of doors and took their E, and hid the ladder behind any wall in front)
   syncLadders() {
-    const { boat, model, interactions, player } = this.ctx;
-    const all = new Set([...(model.ladders || []), ...this.ladders]);
-    for (const [l, m] of this.ladderProxies) if (!all.has(l)) { interactions.remove(m); m.removeFromParent(); this.ladderProxies.delete(l); }
-    for (const l of all) {
-      if (this.ladderProxies.has(l)) continue;
-      const size = l.box.getSize(new THREE.Vector3()), c = l.box.getCenter(new THREE.Vector3());
-      const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.3, size.x), size.y, Math.max(0.3, size.z)), new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide }));
-      m.position.copy(c);
-      boat.root.add(m);
-      interactions.add(m, {
-        hint: () => (player.climb ? '' : player.pos.y > c.y ? 'Спуститься по трапу · Climb down the ladder' : 'Подняться по трапу · Climb the ladder'),
-        use: () => { if (!player.climb && !player.station) player.mount(l); },
-        range: 2.2,
-      });
-      this.ladderProxies.set(l, m);
+    const { interactions } = this.ctx;
+    for (const [, m] of this.ladderProxies) { interactions.remove(m); m.removeFromParent(); }
+    this.ladderProxies.clear();
+    interactions.fallback = () => this.ladderPrompt();
+  }
+
+  // standing at a ladder's foot or its top, facing it, with nothing else under the crosshair
+  ladderPrompt() {
+    const { player, model } = this.ctx;
+    if (player.climb || player.station || this.hiding || this.stats.dead) return null;
+    const p = player.pos, fx = -Math.sin(player.yaw), fz = -Math.cos(player.yaw);
+    const aboard = model.ladders || [];
+    for (const l of [...aboard, ...this.ladders]) {
+      const b = l.box;
+      if (p.y < b.min.y - 0.3 || p.y > b.max.y + 0.2) continue;
+      if (p.x < b.min.x - 0.4 || p.x > b.max.x + 0.4 || p.z < b.min.z - 0.4 || p.z > b.max.z + 0.4) continue;
+      const cx = (b.min.x + b.max.x) / 2 - p.x, cz = (b.min.z + b.max.z) / 2 - p.z, d = Math.hypot(cx, cz);
+      if (d > 0.3 && (cx * fx + cz * fz) / d < 0.3) continue;
+      // (not through a wall: the roof's ladder stands just behind the bridge's back wall)
+      if (aboard.includes(l) && model.collision) {
+        const y = Math.min(Math.max(p.y + 1, b.min.y + 0.3), b.max.y - 0.3);
+        _v.set(p.x, y, p.z);
+        _w.set(Math.min(Math.max(p.x, b.min.x), b.max.x), y, Math.min(Math.max(p.z, b.min.z), b.max.z));
+        const dist = _v.distanceTo(_w);
+        if (dist > 0.05 && model.collision.raycast(_v, _w.sub(_v).normalize(), dist) < dist - 0.1) continue;
+      }
+      const down = p.y > (b.min.y + b.max.y) / 2;
+      return { hint: down ? 'Climb down the ladder' : 'Climb the ladder', use: () => player.mount(l) };
     }
+    return null;
   }
 
   leaveLevel(L) {

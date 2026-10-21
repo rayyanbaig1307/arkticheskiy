@@ -159,8 +159,8 @@ export class Crew {
     const p = o.p || null;
     const est = clamp(en.length * 0.065 + 1.2, 2.5, 9);
     const begin = (secs) => {
-      // (English voices: the English alone; Russian ones: the Russian with the English under it)
-      if (this.lang === 'en') this.ui.subtitle(cast.name, en, '', secs + 0.5); else this.ui.subtitle(cast.name, ru, en, secs + 0.5);
+      // (the subtitles show what the setting asks for: the English, the Russian, both or nothing)
+      this.ui.subtitle(cast.name, ru, en, secs + 0.5);
       if (p && this.people.includes(p)) p.talkT = secs + 0.3;
       o.onStart?.(secs + 0.3);
     };

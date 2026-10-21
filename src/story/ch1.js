@@ -78,7 +78,7 @@ export const CH1 = {
       id: 'brief',
       objective: ['Поднимитесь на мостик', 'Go up to the bridge', '', 'The captain wants you on the bridge: up the stairs from the main deck hall, then up again.'],
       marker: (d) => { const p = d.person('captain'); return p ? p.root.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 2.0, 0)) : null; },
-      enter(d) { d.after(4, () => L(d, 'c1_dikson_1')); d.after(14, () => d.ctx.ui.toast('W A S D — идти · Shift — бег · E — действие · Tab — журнал', 6)); },
+      enter(d) { d.after(4, () => L(d, 'c1_dikson_1')); d.after(14, () => d.ctx.ui.toast('WASD move · Shift run · E use · Tab journal', 6)); },
       update(d) {
         if (!this.go && d.nearPerson('captain', 4.5) && d.inZone('bridge')) {
           this.go = true;
@@ -99,7 +99,7 @@ export const CH1 = {
             d.h.weapons.give?.('pm', { select: true });
             d.h.inventory.addAmmo?.('9x18', 16);
             d.h.hud.pickup?.('ammo_9x18', 1);
-            d.ctx.ui.toast('1 — пистолет · ЛКМ — огонь · ПКМ — прицел · R — перезарядка', 6);
+            d.ctx.ui.toast('1 pistol · Left mouse fire · Right mouse aim · R reload', 6);
             d.lines(['c1_pm_3', 'c1_pm_4'], () => { this.done = true; }, { delay: 1.0 });
           });
         }
@@ -132,7 +132,7 @@ export const CH1 = {
           for (const g of ['rooms', 'engine', 'deck']) d.ctx.lights?.setGroup?.(g, false);
           d.sfx('light_pop', null); d.stinger('jump_soft');
           d.after(0.6, () => L(d, 'c1_radar_4'));
-          d.after(2.5, () => { if (!d.h.flashlight.on) d.ctx.ui.toast('F — фонарь · the flashlight', 5); });
+          d.after(2.5, () => { if (!d.h.flashlight.on) d.ctx.ui.toast('F flashlight', 5); });
         }
         if (this.out && d.nearPerson('engineer', 4)) return true;
         return false;

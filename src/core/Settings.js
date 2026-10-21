@@ -34,7 +34,8 @@ const DEFAULTS = {
   timeOfDay: 'night',
   volume: 0.8,
   music: true,
-  voiceLang: 'ru',          // the voices: 'ru' (Russian, English subtitles) or 'en'
+  voiceLang: 'en',          // the voices: 'en' (where recorded; Russian where not yet) or 'ru'
+  subs: 'en',               // the subtitles: 'en', 'ru', 'both' or 'off'
   sensitivity: 1,
   fov: 70,
   showFps: false,
@@ -42,7 +43,10 @@ const DEFAULTS = {
 
 export function loadSettings() {
   try {
-    return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(KEY) || '{}') };
+    const saved = JSON.parse(localStorage.getItem(KEY) || '{}');
+    // (settings from before the English menu: English voices once, as the game now starts in)
+    if (saved.voiceLang && !saved.subs) saved.voiceLang = 'en';
+    return { ...DEFAULTS, ...saved };
   } catch {
     return { ...DEFAULTS };
   }

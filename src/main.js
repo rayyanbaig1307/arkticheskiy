@@ -46,7 +46,8 @@ async function boot() {
   const canvas = document.getElementById('game');
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance', stencil: false, depth: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5) * quality.scale);
+  const BASE_PR = Math.min(window.devicePixelRatio, 1.5) * quality.scale;
+  renderer.setPixelRatio(BASE_PR);
   renderer.setSize(innerWidth, innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NoToneMapping;          // (tone mapping is a post pass: core/Post.js)
@@ -119,7 +120,7 @@ async function boot() {
     if (kind === 'hit' && d.big) crew.moment('iceHit');
   });
   // the animals on the ice
-  ui.loading('Walruses and penguins', 0.82);
+  ui.loading('The wildlife', 0.82);
   const animals = new Animals({ scene, ice, audio, lighting });
   await animals.load();
   // snow and breath, the foam map, the radar screen
@@ -251,10 +252,41 @@ async function boot() {
   // the loop
   const clock = new THREE.Clock();
   let freecam = null; const _fc = new THREE.Vector3(), _fl = new THREE.Vector3();
+  // the title screen: a slow turn around her from off the quarter, high, with the ship to the
+  // right of the words
+  const _tr = new THREE.Vector3();
+  const titleShot = () => {
+    const a = 2.3 + t * 0.022;
+    boat.toWorld(_fc.set(Math.cos(a) * 32, 9 + Math.sin(t * 0.13) * 0.5, -2 + Math.sin(a) * 32), _fc);
+    boat.toWorld(_fl.set(0, 3.2, -2), _fl);
+    _tr.subVectors(_fl, _fc).normalize().cross(camera.up).normalize();
+    _fl.addScaledVector(_tr, -10);
+    camera.position.copy(_fc); camera.lookAt(_fl); camera.updateMatrixWorld();
+  };
   let erShown = true;
   let t = 0, frames = 0, fpsT = 0, fpsMs = 0;
+  const gov = { scale: 1, slowT: 0, fastT: 0, ema: 1 / 60 };
+  const applyScale = () => { renderer.setPixelRatio(BASE_PR * gov.scale); resize(); };
+  const govern = (raw) => {
+    if (!playing || raw > 0.25) return;                        // (paused, or the tab was away)
+    gov.ema += (raw - gov.ema) * 0.06;
+    const gpu = perf.median;
+    if (gov.ema > 1 / 48) { gov.slowT += raw; gov.fastT = 0; }
+    else if (gpu && gpu < 9 && gov.ema < 1 / 55) { gov.fastT += raw; gov.slowT = 0; }
+    else { gov.slowT = Math.max(0, gov.slowT - raw); gov.fastT = 0; }
+    if (gov.slowT > 1.5) {
+      gov.slowT = 0;
+      if (gov.scale > 0.62) { gov.scale = Math.max(0.6, +(gov.scale - 0.1).toFixed(2)); applyScale(); }
+      else if (post.ao && post.ao.enabled) post.ao.enabled = false;
+    } else if (gov.fastT > 5) {
+      gov.fastT = 0;
+      if (post.ao && !post.ao.enabled) post.ao.enabled = true;
+      else if (gov.scale < 1) { gov.scale = Math.min(1, +(gov.scale + 0.1).toFixed(2)); applyScale(); }
+    }
+  };
   const frame = () => {
     const raw = clock.getDelta();
+    govern(raw);
     const dt = Math.min(raw, 1 / 20);
     t += dt;
     atmos.uTime.value = t;
@@ -265,6 +297,7 @@ async function boot() {
     boat.update(dt);
     if (playing) player.update(dt);
     else { input.look(); player.place(dt); }
+    if (!playing && !ui.started && !freecam) titleShot();
     if (freecam) {        // (test harness: a camera anywhere in boat space)
       camera.position.copy(boat.toWorld(freecam.pos, _fc)); camera.lookAt(boat.toWorld(freecam.look, _fl)); camera.updateMatrixWorld();
     }
@@ -322,7 +355,7 @@ async function boot() {
     if (fpsT > 0.5) {
       const i = renderer.info.render;
       const gpu = perf.median;
-      ui.fps(`${Math.round(frames / fpsT)} fps  ${(fpsMs / frames).toFixed(1)} ms  gpu ${gpu ? gpu.toFixed(1) : '?'} ms\ndraws ${i.calls}  tris ${(i.triangles / 1000).toFixed(0)}k  ${quality.name}`);
+      ui.fps(`${Math.round(frames / fpsT)} fps  ${(fpsMs / frames).toFixed(1)} ms  gpu ${gpu ? gpu.toFixed(1) : '?'} ms\ndraws ${i.calls}  tris ${(i.triangles / 1000).toFixed(0)}k  ${quality.name}  scale ${Math.round(gov.scale * 100)}%${post.ao && !post.ao.enabled ? ' no AO' : ''}`);
       window.__fps = frames / fpsT;
       frames = 0; fpsT = 0; fpsMs = 0;
     }
@@ -337,7 +370,39 @@ async function boot() {
   story = new Story({ ui, boat, stations, station, crew, audio, player, model, scene, interactions, towline, lighting, peopleData, towMat, settings: { ...settings, mode: 'voyage' } });
   director = new Director({ horror, boat, station, crew, stations, ui, audio, player, model, sky, voyage: story, interactions, scene, lights, radar, lighting, peopleData, ice, camera });
   // the levels come in behind the title screen
-  horror.loadLevels((name) => console.log('[Arkticheskiy] level ready:', name));
+  const warmAll = async () => {
+    const wait = () => new Promise((r) => setTimeout(r, 30));
+    const warm = (root) => { try { renderer.compile(root, camera, scene); } catch (e) { console.warn('[Arkticheskiy] warm-up:', e); } };
+    // what is hidden only to save drawing it (rooms, the engine room, the levels, the guns not in
+    // hand) shown for the compile; never the collision, zone and trigger boxes
+    horror.gunLight?.(0.016, camera.getWorldPosition(new THREE.Vector3()));     // (the guns with their reflections)
+    const SKIP = /^(COL|ZONE|LAD|TRIG|SPAWN|SPOT|HIDE|USE|ITEM|DOC|LMP|PILLAR|GUEST)_/;
+    const hidden = [];
+    scene.traverse((o) => { if (!o.visible && !SKIP.test(o.name || '') && !(o.material && o.material.visible === false)) { hidden.push(o); o.visible = true; } });
+    warm(scene);
+    for (const o of hidden) o.visible = false;
+    await wait();
+    // the rooms' own reflections: their materials with a probe's map (another shader each)
+    const maps = Object.values(probes.maps || {});
+    if (maps.length && probes.mats?.length) {
+      const saved = probes.mats.map((m) => m.envMap);
+      for (const m of probes.mats) m.envMap = maps[0];
+      warm(scene);
+      probes.mats.forEach((m, i) => { m.envMap = saved[i]; });
+      await wait();
+    }
+    // one of each creature, out of sight, compiled and put away
+    for (const kind of Object.keys(horror.enemies.data || {})) {
+      const c = horror.enemies.spawn(kind, new THREE.Vector3(0, -50, 0), { state: 'dormant', name: '__warm_' + kind });
+      if (!c) continue;
+      c.root.updateMatrixWorld(true);
+      warm(c.root);
+      horror.enemies.remove(c);
+      await wait();
+    }
+    console.log('[Arkticheskiy] shaders warm:', renderer.info.programs.length, 'programs');
+  };
+  horror.loadLevels((name) => console.log('[Arkticheskiy] level ready:', name)).then(warmAll);
 
   ui.ready();
   window.__game = {

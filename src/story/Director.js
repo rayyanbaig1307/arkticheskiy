@@ -120,7 +120,7 @@ export class Director {
     this.objective(null);
     this.after(2, () => {
       const el = this.el.end;
-      if (el) { el.classList.remove('hidden'); const h = el.querySelector('h2, .title'); if (h) h.textContent = 'АРКТИЧЕСКИЙ'; }
+      if (el) el.classList.remove('hidden');
       this.ctx.player.input.unlock?.();
     }, true);
   }
@@ -186,7 +186,7 @@ export class Director {
     const el = this.el;
     if (!ru) { el.obj?.classList.add('hidden'); return; }
     el.obj?.classList.remove('hidden');
-    if (el.title) el.title.textContent = `${ru} · ${en}`;
+    if (el.title) el.title.textContent = en || ru;
     if (el.text) el.text.textContent = textEn || '';
     this.h.journal.setObjective?.(en, textEn || '', ru);
   }
@@ -277,7 +277,7 @@ export class Director {
       document.body.appendChild(e); return e;
     })();
     let typed = '';
-    const draw = () => { el.innerHTML = `<div style="opacity:.7;margin-bottom:8px">КОД ДОСТУПА · ACCESS CODE</div><div style="font-size:30px;letter-spacing:10px;min-height:38px">${typed.padEnd(code.length, '·')}</div><div style="opacity:.6;margin-top:8px">0–9 · Backspace · Esc</div>`; };
+    const draw = () => { el.innerHTML = `<div style="opacity:.7;margin-bottom:8px">ACCESS CODE</div><div style="font-size:30px;letter-spacing:10px;min-height:38px">${typed.padEnd(code.length, '·')}</div><div style="opacity:.6;margin-top:8px">0–9 · Backspace · Esc</div>`; };
     const close = () => { el.remove(); removeEventListener('keydown', key, true); this.ctx.player.input.lock?.(); };
     const key = (e) => {
       e.preventDefault(); e.stopPropagation();

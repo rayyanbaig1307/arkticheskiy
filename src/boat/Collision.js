@@ -8,7 +8,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 // each triangle near the capsule, push the capsule's segment out along the closest-point normal.
 
 const _tri = new THREE.Vector3(), _cap = new THREE.Vector3(), _box = new THREE.Box3(), _seg = new THREE.Line3();
-const _p = new THREE.Vector3(), _d = new THREE.Vector3();
+const _p = new THREE.Vector3(), _d = new THREE.Vector3(), _hit = new THREE.Vector3();
 
 export class Collision {
   constructor(meshes, root) {
@@ -134,10 +134,14 @@ export class Collision {
       const h = e.bvh.raycastFirst(this.raycaster.ray, THREE.DoubleSide, 0, far);
       if (h && h.distance < best) best = h.distance;
     }
+    // (the doors' boxes: the hit goes in its own vector, not in _p, which floorAt passes as the
+    // origin; written over, every probe above a closed door, a deck down, came back as a floor
+    // half a metre over your feet, and lifted you a step a frame through the deckhead)
+    const ray = this.raycaster.ray;
     for (const b of this.boxes) {
       if (!b.on) continue;
-      const p = this.raycaster.ray.intersectBox(b.box, _p);
-      if (p) best = Math.min(best, p.distanceTo(origin));
+      const p = ray.intersectBox(b.box, _hit);
+      if (p) { const d = p.distanceTo(ray.origin); if (d <= far) best = Math.min(best, d); }
     }
     return best;
   }

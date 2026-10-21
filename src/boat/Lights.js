@@ -52,7 +52,7 @@ export class Lights {
   constructor({ boat, model, count = 4 }) {
     this.boat = boat; this.model = model;
     this.rooms = new Pool(boat.root, count, (L) => L.group !== 'deck');
-    this.floods = new Pool(boat.root, 2, (L) => L.group === 'deck');
+    this.floods = new Pool(boat.root, 3, (L) => L.group === 'deck');
     this.groups = { rooms: true, engine: true, deck: true, bridge: true };
     this.scale = 1;            // the time of day: the floods are dimmer by day
     this.flicker = 0;

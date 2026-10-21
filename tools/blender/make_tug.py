@@ -580,6 +580,13 @@ def build(root):
     E('LMP_deck_1', (1.6, y0 - 0.25, L01 + 1.25), color=[0.9, 0.95, 1.0], power=55, range=18, group='deck')
     E('LMP_deck_2', (-1.6, y0 - 0.25, L01 + 1.25), color=[0.9, 0.95, 1.0], power=55, range=18, group='deck')
     E('LMP_fore_1', (0, 19.85, FC + 2.9), color=[0.9, 0.95, 1.0], power=60, range=20, group='deck')
+    # the bulkhead lamps over the doors to the open deck (tug_outfit.py's caged fittings): a ship
+    # lights every outside door, and at night without them her walls were black slabs
+    door_lamps = [('aft', (0.75, -7.25, DECK + 2.2)), ('stbd', (4.55, 0.95, DECK + 2.2)), ('port', (-4.55, 0.95, DECK + 2.2)),
+                  ('lobby', (-3.75, 5.95, L01 + 2.2)), ('wingstbd', (4.45, 4.55, L02 + 2.2)), ('wingport', (-4.45, 4.55, L02 + 2.2)),
+                  ('bridgeaft', (0.6, 0.22, L02 + 2.15))]
+    for nm, p in door_lamps:
+        E('LMP_door_' + nm, p, color=[1.0, 0.86, 0.66], power=9, range=8, group='deck')
     # the deck floodlights (aft, on the 01 deck rail): housings and lenses
     fit = Part('FITTINGS', [M['lampcold']])
     for s in (1, -1):

@@ -143,10 +143,12 @@ npm run pack
 
 - The page needs WebGL 2. A discrete GPU is not required; on integrated graphics use Low or
   Medium.
-- The crew speak Russian in recorded voices (ElevenLabs, `public/audio/vo/`), with English
-  subtitles. The pause menu's **Voices** switch picks English instead: those recordings live in
+- The menus and the HUD are in English (`src/ui/lang.js` keeps the English half of the older
+  "Russian / English" hint strings). Settings → Language: **Voices** English (the default) or
+  Russian, **Subtitles** English, Russian, both or off. The English recordings live in
   `public/audio/vo_en/` (`node tools/elevenlabs/generate.mjs --lang en`, `--only story_c1_*` for a
-  part); a line not yet recorded in English is spoken by its Russian recording. After changing a line in `src/characters/Lines.js`, record it again with
+  part); a line not yet recorded in English is spoken by its Russian recording (`public/audio/vo/`).
+  The English text has the place names respelled for the voice (`SAY_EN` in generate.mjs). After changing a line in `src/characters/Lines.js`, record it again with
   `node tools/elevenlabs/generate.mjs --dry` (the cost) and then without `--dry`; until then that
   line falls back to your browser's Russian speech voice if one is installed (Windows: Settings →
   Time & language → Speech → add Russian), else a murmur.

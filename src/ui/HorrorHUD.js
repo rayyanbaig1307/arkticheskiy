@@ -25,13 +25,14 @@ export const CHAPTERS = {
   5: { ru: 'Домой', en: 'Home', nth: ['Глава пятая', 'Chapter five'] },
 };
 
+// (the screen is in English: the title and what did it)
 const DEATHS = {
-  cold: ['ТЫ ЗАМЁРЗ', 'You froze to death', 'Холод забрал тебя.', 'The cold took you.'],
-  bear: ['ТЫ ПОГИБ', 'You died', 'Белый медведь.', 'A polar bear.'],
-  turned: ['ТЫ ПОГИБ', 'You died', 'Обращённые добрались до тебя.', 'The Turned got to you.'],
-  shade: ['ТЫ ПОГИБ', 'You died', 'Тень забрала последнее тепло.', 'A Shade took the last of your warmth.'],
-  fall: ['ТЫ ПОГИБ', 'You died', 'Ты сорвался.', 'You fell.'],
-  gromov: ['ТЫ ПОГИБ', 'You died', 'Громов.', 'Gromov.'],
+  cold: ['You froze', 'The cold took you.'],
+  bear: ['You died', 'A polar bear.'],
+  turned: ['You died', 'The Turned got to you.'],
+  shade: ['You died', 'A Shade took the last of your warmth.'],
+  fall: ['You died', 'You fell.'],
+  gromov: ['You died', 'Gromov.'],
 };
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -78,22 +79,22 @@ export class HorrorHUD {
     this.frostCanvas = el('canvas', 'hh-frost', null, layers);
     this.lowEl = el('div', 'hh-low', null, layers);
     this.hurtEl = el('div', 'hh-hurt', null, layers);
-    this.lockerEl = el('div', 'hh-locker', '<div class="hh-hidden-tag"><svg viewBox="0 0 48 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8c6 7 13 10 20 10s14-3 20-10M12 15l-3 5M24 18v5M36 15l3 5"/></svg><b>Скрыт</b><span>hidden</span></div>', layers);
+    this.lockerEl = el('div', 'hh-locker', '<div class="hh-hidden-tag"><svg viewBox="0 0 48 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8c6 7 13 10 20 10s14-3 20-10M12 15l-3 5M24 18v5M36 15l3 5"/></svg><b>Hidden</b></div>', layers);
     r.insertBefore(layers, r.firstChild);
     this._drawFrost();
 
     // the bars and the battery
     const st = el('div', 'hh-stats', null, r);
-    const bar = (key, ru, en) => {
-      const b = el('div', `hh-bar ${key}`, `<div class="lbl"><b>${ru}</b><span>${en}</span><i class="trend"></i></div><div class="track"><div class="trail"></div><div class="fill"></div></div>`, st);
+    const bar = (key, label) => {
+      const b = el('div', `hh-bar ${key}`, `<div class="lbl"><b>${label}</b><i class="trend"></i></div><div class="track"><div class="trail"></div><div class="fill"></div></div>`, st);
       return { key, el: b, fill: b.querySelector('.fill'), trail: b.querySelector('.trail'), v: -1, trailV: 100, trailT: 0, ref: -1, t: 0, shown: false, warn: false };
     };
     this.bars = [
-      Object.assign(bar('health', 'Здоровье', 'health'), { low: 40, crit: 25, step: 0.5, hold: 3 }),
-      Object.assign(bar('warmth', 'Тепло', 'warmth'), { low: 45, crit: 25, step: 0.9, hold: 4 }),
-      Object.assign(bar('stamina', 'Силы', 'stamina'), { low: 99.5, crit: -1, step: 0.4, hold: 1.2 }),
+      Object.assign(bar('health', 'Health'), { low: 40, crit: 25, step: 0.5, hold: 3 }),
+      Object.assign(bar('warmth', 'Warmth'), { low: 45, crit: 25, step: 0.9, hold: 4 }),
+      Object.assign(bar('stamina', 'Stamina'), { low: 99.5, crit: -1, step: 0.4, hold: 1.2 }),
     ];
-    this.batt = el('div', 'hh-batt', `<div class="lbl"><b>Фонарь</b><span>flashlight</span></div><div class="cells">${'<i></i>'.repeat(5)}</div><span class="spare"></span>`, st);
+    this.batt = el('div', 'hh-batt', `<div class="lbl"><b>Flashlight</b></div><div class="cells">${'<i></i>'.repeat(5)}</div><span class="spare"></span>`, st);
     this.battCells = [...this.batt.querySelectorAll('.cells i')];
     this.battSpare = this.batt.querySelector('.spare');
     this._batt = { lit: -1, on: null, t: 0, shown: false, low: null, spare: -1 };
@@ -118,8 +119,8 @@ export class HorrorHUD {
     // the death screen lives on the page itself: it must take clicks and sit over everything
     this.deathEl = el('div', 'hh-death hidden', `<div class="inner"><div class="title"></div><div class="sub"></div>
       <div class="cause"><b></b><span></span></div>
-      <div class="buttons"><button class="primary retry"><span>Повторить</span><small></small></button>
-      <button class="quit"><span>В главное меню</span><small>Quit to the title</small></button></div></div>`, document.body);
+      <div class="buttons"><button class="primary retry"><span>Retry</span><small></small></button>
+      <button class="quit"><span>Quit to Title</span><small></small></button></div></div>`, document.body);
     this.deathEl.querySelector('.retry').addEventListener('click', () => this._retry());
     this.deathEl.querySelector('.quit').addEventListener('click', () => this._quit());
   }
@@ -300,8 +301,8 @@ export class HorrorHUD {
     if (!id) { this._wake(false); return; }
     const w = WEAPONS[id];
     P.icon.innerHTML = ICONS[id] || '';
-    P.ru.textContent = w ? w.name.ru : id;
-    P.en.textContent = w ? w.name.en : '';
+    P.ru.textContent = w ? w.name.en : id;
+    P.en.textContent = '';
     const cached = this._ammoCache[id];
     const reserve = w && this.inventory ? this.inventory.ammo[w.ammo] : cached?.[1];
     this._rounds(id, cached ? cached[0] : null, reserve);
@@ -339,7 +340,7 @@ export class HorrorHUD {
   // a toast: { icon (svg), wide (a weapon's strip), ru, en, count, secs }
   notify({ icon, wide, ru, en, count, secs = 3.4 } = {}) {
     const n = count != null && count !== 1 ? `<em>${count > 0 ? '×' : ''}${count}</em>` : '';
-    const t = el('div', `hh-toast${wide ? ' wide' : ''}${icon ? '' : ' plain'}`, `${icon ? `<div class="ic">${icon}</div>` : ''}<div class="tx"><b>${esc(ru)}</b>${n}<span>${esc(en)}</span></div>`);
+    const t = el('div', `hh-toast${wide ? ' wide' : ''}${icon ? '' : ' plain'}`, `${icon ? `<div class="ic">${icon}</div>` : ''}<div class="tx"><b>${esc(en || ru)}</b>${n}</div>`);
     this.toastsEl.prepend(t);
     requestAnimationFrame(() => t.classList.add('on'));
     this.toasts.push({ el: t, t: secs, out: false });
@@ -353,17 +354,17 @@ export class HorrorHUD {
 
   pickup(id, count = 1) { const d = itemDef(id); this.notify({ icon: d.iconSvg, ru: d.name.ru, en: d.name.en, count: d.ammo ? d.ammo.rounds * count : count }); }
 
-  used(id) { const d = itemDef(id); this.notify({ icon: d.iconSvg, ru: d.name.ru, en: `${d.name.en}: used`, secs: 2.2 }); }
+  used(id) { const d = itemDef(id); this.notify({ icon: d.iconSvg, ru: d.name.ru, en: `${d.name.en} used`, secs: 2.2 }); }
 
-  // the chapter card: number, the title big in Cyrillic, the English under it
+  // the chapter card: the number, the title big
   chapter(n, ru, en, secs = 6) {
     const c = CHAPTERS[n] || {};
     const E = this.chapterEl;
-    E.querySelector('.nth b').textContent = c.nth?.[0] || (n ? `Глава ${n}` : '');
-    E.querySelector('.nth span').textContent = c.nth?.[1] || (n ? `Chapter ${n}` : '');
+    E.querySelector('.nth b').textContent = c.nth?.[1] || (n ? `Chapter ${n}` : '');
+    E.querySelector('.nth span').textContent = '';
     const name = E.querySelector('.name');
-    name.textContent = (ru || c.ru || '').toUpperCase();
-    E.querySelector('.name-en').textContent = en || c.en || '';
+    name.textContent = (en || c.en || '').toUpperCase();
+    E.querySelector('.name-en').textContent = '';
     // (snap back to tight letters without animating, then let them spread again as it fades in)
     name.style.transition = 'none';
     E.classList.remove('on', 'out'); void E.offsetWidth;
@@ -386,13 +387,13 @@ export class HorrorHUD {
   death(cause = this.stats?.cause) {
     if (this.deathOpen) return;
     this.deathOpen = true;
-    const [title, sub, ru, en] = DEATHS[cause] || ['ТЫ ПОГИБ', 'You died', '', ''];
+    const [title, why] = DEATHS[cause] || ['You died', ''];
     const D = this.deathEl;
-    D.querySelector('.title').textContent = title;
-    D.querySelector('.sub').textContent = sub;
-    D.querySelector('.cause b').textContent = ru;
-    D.querySelector('.cause span').textContent = en;
-    D.querySelector('.retry small').textContent = saves.has() ? 'Retry from the last checkpoint' : 'Start again';
+    D.querySelector('.title').textContent = title.toUpperCase();
+    D.querySelector('.sub').textContent = '';
+    D.querySelector('.cause b').textContent = why;
+    D.querySelector('.cause span').textContent = '';
+    D.querySelector('.retry small').textContent = saves.has() ? 'From the last checkpoint' : 'From the beginning';
     D.classList.toggle('cold', cause === 'cold' || cause === 'shade');
     D.classList.remove('hidden', 'on', 'ready'); void D.offsetWidth;
     D.classList.add('on');

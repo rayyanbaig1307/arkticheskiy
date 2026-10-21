@@ -95,6 +95,11 @@ for (const [who, list] of Object.entries(LINES)) list.forEach(([ru, en], i) => l
 for (const [kind, m] of Object.entries(MOMENTS)) for (const who of m.who) lines.push({ id: `${who}_${kind}`, who, ru: m.line[0], en: m.line[1] });
 for (const [key, [who, ru, en]] of Object.entries(STORY)) lines.push({ id: `story_${key}`, who, ru, en });
 
+// the Russian names, spelled for the English voices to say them (the subtitles keep the proper
+// spelling): "Polyarnik" came out "Polyannic", "Severny" once "Severiny"
+const SAY_EN = [[/Polyarnik/g, 'Pol-yar-nik'], [/Severny/g, 'Sev-yer-nee'], [/Dikson/g, 'Dick-son']];
+const sayEn = (t) => SAY_EN.reduce((a, [re, to]) => a.replace(re, to), t);
+
 const INDEX = join(OUT, 'index.json');
 const made = existsSync(INDEX) ? JSON.parse(readFileSync(INDEX, 'utf8')) : {};
 const rate = M.creditsPerChar ?? 1;
@@ -103,7 +108,7 @@ const jobs = lines.map((l) => {
   const v = M.voices[l.who];
   if (!v) throw new Error(`No voice cast for ${l.who}`);
   // (the English recording keeps the Russian it stands for: the game finds a line by it)
-  const text = LANG === 'en' ? l.en : l.ru;
+  const text = LANG === 'en' ? sayEn(l.en) : l.ru;
   const want = { who: l.who, ru: l.ru, ...(LANG === 'en' ? { en: l.en, lang: 'en' } : {}), voice: v.id, model: v.model || M.model };
   const same = (m) => m && m.who === want.who && m.ru === want.ru && (LANG !== 'en' || m.en === want.en) && m.voice === want.voice && m.model === want.model;
   const file = join(OUT, `${l.id}.mp3`);
